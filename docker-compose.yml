@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  php-amqp-wrapper:
+    image: emarsys/php7:7.3-cli
+    working_dir: /app
+    volumes:
+      - .:/app:rw
+    networks:
+      default:
+        aliases:
+          - php-amqp-wrapper
+    command: cron -f
+    env_file:
+      - ./.env
+    links:
+      - php-amqp-wrapper-rabbit
+    depends_on:
+      - php-amqp-wrapper-rabbit
+
+  php-amqp-wrapper-rabbit:
+    image: rabbitmq:latest
