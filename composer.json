@@ -1,0 +1,18 @@
+{
+  "prefer-stable" : true,
+  "require": {
+    "php": "~7.2",
+    "php-amqplib/php-amqplib": "*",
+    "psr/log": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*",
+    "phpunit/php-invoker": "*"
+  },
+  "autoload": {
+    "psr-4": {
+        "AmqpWrapper\\": "src/",
+        "Test\\": "test/"
+    }
+  }
+}
