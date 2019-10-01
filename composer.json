@@ -13,7 +13,8 @@
   },
   "require-dev": {
     "phpunit/phpunit": "*",
-    "phpunit/php-invoker": "*"
+    "phpunit/php-invoker": "*",
+    "fqqdk/packagist-publisher": "0.0.2"
   },
   "autoload": {
     "psr-4": {
