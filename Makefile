@@ -52,4 +52,4 @@ logs: ## Show logs
 test: phpunit ## Run all test
 
 phpunit: ## Test with phpunit
-	$(DOCKER_COMPOSE) exec $(CONTAINER) bash -l -c "APPLICATION_ENV=\"testing\" vendor/bin/phpunit --enforce-time-limit -c test/phpunit.xml $(FILTERARGS) $(TESTFILE)"
+	$(DOCKER_COMPOSE) exec $(CONTAINER) bash -l -c "vendor/bin/phpunit --enforce-time-limit -c test/phpunit.xml $(FILTERARGS) $(TESTFILE)"
