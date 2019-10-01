@@ -15,16 +15,11 @@ help:
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/\(.*\):.*##[ \t]*/	\1 ## /' | column -t -s '##'
 	@echo
 
-all: stop destroy build run packages ## Build all
+all: stop destroy run packages ## Build all
 
 destroy: ## Destroy containers
 	-$(DOCKER_COMPOSE) stop
 	-$(DOCKER_COMPOSE) rm -f
-	-$(DOCKER) rmi $(IMAGE)-base
-
-build: ## Build container
-	$(DOCKER) build --no-cache -t $(IMAGE)-base .
-	$(DOCKER) build --no-cache -t $(IMAGE) -f Dockerfile.development --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} .
 
 run: ## Run containers
 	$(DOCKER_COMPOSE) up -d
