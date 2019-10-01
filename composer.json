@@ -1,4 +1,10 @@
 {
+  "name": "emartech/php-amqp-wrapper",
+  "description": "helper classes and wrappers for rabbitmq connectivity ",
+  "minimum-stability": "stable",
+  "license": [
+    "MIT"
+  ],
   "prefer-stable" : true,
   "require": {
     "php": "~7.2",
