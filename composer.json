@@ -8,6 +8,7 @@
   "prefer-stable" : true,
   "require": {
     "php": "~7.2",
+    "ext-json": "*",
     "php-amqplib/php-amqplib": "*",
     "psr/log": "*"
   },
