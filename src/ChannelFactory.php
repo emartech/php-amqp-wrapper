@@ -26,14 +26,14 @@ class ChannelFactory
 
     public function openQueue(string $queueName): AMQPChannel
     {
-        $this->logger->debug('Connecting to AMQP', ['queue_name' => $queueName]);
+        $this->logger->debug('Connecting to AMQP', ['queue' => $queueName]);
 
         $channel = $this->connection->channel();
         $channel->queue_declare($queueName, false, true, false, false);
         $channel->exchange_declare(self::EXCHANGE, 'direct', true, true, false);
         $channel->queue_bind($queueName, self::EXCHANGE);
 
-        $this->logger->debug('Successfully connected to AMQP', ['queueName' => $queueName]);
+        $this->logger->debug('Successfully connected to AMQP', ['queue' => $queueName]);
 
         return $channel;
     }

@@ -36,7 +36,7 @@ class ConnectionFactory
                 throw new AMQPRuntimeException('invalid connection url');
         }
 
-        $logger->debug('Successfully connected to AMQP', ['connectionClass' => get_class($connection)]);
+        $logger->debug('Successfully connected to AMQP', ['connection_class' => get_class($connection)]);
 
         return $connection;
     }

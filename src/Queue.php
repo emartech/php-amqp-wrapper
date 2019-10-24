@@ -2,6 +2,7 @@
 
 namespace AmqpWrapper;
 
+use ErrorException;
 use Exception;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
@@ -52,6 +53,9 @@ class Queue
         $this->messageBuffer->flush();
     }
 
+    /**
+     * @throws ErrorException
+     */
     public function consume(QueueConsumer $consumer): void
     {
         $consumerTag = 'consumer' . getmypid();
@@ -123,7 +127,7 @@ class Queue
             'queue' => $this->queueName,
             'event' => $event,
             'raw_message' => $rawMessage,
-            'exception' => $ex
+            'exception' => $ex,
         ]);
     }
 
@@ -145,7 +149,7 @@ class Queue
         $this->logger->debug($logMessage, [
             'queue' => $this->queueName,
             'event' => $event,
-            'raw_message' => $rawMessage
+            'raw_message' => $rawMessage,
         ]);
     }
 }
