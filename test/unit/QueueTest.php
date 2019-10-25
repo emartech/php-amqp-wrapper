@@ -1,6 +1,6 @@
 <?php
 
-use Emartech\AmqpWrapper\ConnectionFactory;
+use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\ChannelFactory;
@@ -21,7 +21,7 @@ class QueueTest extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connection = ConnectionFactory::getConnection(getenv('RABBITMQ_URL'), $this->dummyLogger);
+        $this->connection = Factory::create($this->dummyLogger)->createConnection(getenv('RABBITMQ_URL'));
         $this->channelFactory = new ChannelFactory($this->dummyLogger, $this->connection);
         $this->purgeQueue();
     }

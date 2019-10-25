@@ -15,7 +15,7 @@ class ChannelFactory
 
     public static function create(LoggerInterface $logger): self
     {
-        return new self($logger, ConnectionFactory::getConnection(getenv('RABBITMQ_URL'), $logger));
+        return new self($logger, Factory::create($logger)->createConnection(getenv('RABBITMQ_URL')));
     }
 
     public function __construct(LoggerInterface $logger, AbstractConnection $connection)
