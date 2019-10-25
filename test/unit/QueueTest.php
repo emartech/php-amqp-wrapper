@@ -5,11 +5,11 @@ use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\ChannelFactory;
 use Emartech\AmqpWrapper\QueueConsumer;
+use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
-use Test\BaseTestCase;
 
 class QueueTest extends BaseTestCase
 {

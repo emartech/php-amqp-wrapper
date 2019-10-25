@@ -15,12 +15,13 @@
   "require-dev": {
     "phpunit/phpunit": "*",
     "phpunit/php-invoker": "*",
-    "fqqdk/packagist-publisher": "0.0.2"
+    "emartech/php-test-helpers": "*",
+    "fqqdk/packagist-publisher": "*"
   },
   "autoload": {
     "psr-4": {
-        "Emartech\\AmqpWrapper\\": "src/",
-        "Test\\": "test/"
+      "Emartech\\AmqpWrapper\\": "src/",
+      "Test\\": "test/"
     }
   }
 }

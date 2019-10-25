@@ -1,8 +1,8 @@
 <?php
 
 use Emartech\AmqpWrapper\MessageBuffer;
+use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Message\AMQPMessage;
-use Test\BaseTestCase;
 
 class MessageBufferTest extends BaseTestCase
 {

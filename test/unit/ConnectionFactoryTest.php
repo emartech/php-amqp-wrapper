@@ -1,10 +1,10 @@
 <?php
 
 use Emartech\AmqpWrapper\ConnectionFactory;
+use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Connection\AMQPSSLConnection;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
-use Test\BaseTestCase;
 
 class ConnectionFactoryTest extends BaseTestCase
 {
