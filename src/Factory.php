@@ -2,6 +2,7 @@
 
 namespace Emartech\AmqpWrapper;
 
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPSSLConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -10,20 +11,46 @@ use Psr\Log\LoggerInterface;
 
 class Factory
 {
+    private const EXCHANGE_DIRECT = 'amq.direct';
     private const SCHEME_AMQP = 'amqp';
     private const SCHEME_AMQPS = 'amqps';
 
     private $logger;
+    private $connectionUrl;
+    private $waitTimeout;
+    private $batchSize;
 
 
     public static function create(LoggerInterface $logger): self
     {
-        return new self($logger);
+        return new self($logger, getenv('RABBITMQ_URL'), getenv("QUEUE_WAIT_TIMEOUT_SECONDS"), getenv('BATCH_SIZE'));
     }
 
-    public function __construct(LoggerInterface $logger)
+    public function __construct(LoggerInterface $logger, string $connectionUrl, int $waitTimeout, int $batchSize)
     {
         $this->logger = $logger;
+        $this->connectionUrl = $connectionUrl;
+        $this->waitTimeout = $waitTimeout;
+        $this->batchSize = $batchSize;
+    }
+
+    public function createQueue(string $queueName): Queue
+    {
+        return new Queue($queueName, $this->openChannel($queueName, $this->connectionUrl), $this->waitTimeout, $this->batchSize, new MessageBuffer(), $this->logger);
+    }
+
+    public function openChannel(string $queueName, string $connectionUrl): AMQPChannel
+    {
+        $this->logger->debug('Connecting to AMQP', ['queue' => $queueName]);
+
+        $channel = $this->createConnection($connectionUrl)->channel();
+        $channel->queue_declare($queueName, false, true, false, false);
+        $channel->exchange_declare(self::EXCHANGE_DIRECT, 'direct', true, true, false);
+        $channel->queue_bind($queueName, self::EXCHANGE_DIRECT);
+
+        $this->logger->debug('Successfully connected to AMQP', ['queue' => $queueName]);
+
+        return $channel;
     }
 
     public function createConnection(string $connectionUrl): AbstractConnection

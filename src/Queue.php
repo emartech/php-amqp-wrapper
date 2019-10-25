@@ -19,11 +19,6 @@ class Queue
     private $batchSize = 2;
 
 
-    public static function create(string $queueName, ChannelFactory $factory, LoggerInterface $logger): self
-    {
-        return new self($queueName, $factory->openQueue($queueName), getenv('QUEUE_WAIT_TIMEOUT_SECONDS'), getenv('BATCH_SIZE'), new MessageBuffer(), $logger);
-    }
-
     public function __construct(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)
     {
         $this->logger = $logger;

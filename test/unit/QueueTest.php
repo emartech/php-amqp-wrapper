@@ -3,7 +3,6 @@
 use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
-use Emartech\AmqpWrapper\ChannelFactory;
 use Emartech\AmqpWrapper\QueueConsumer;
 use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Channel\AMQPChannel;
@@ -13,16 +12,17 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class QueueTest extends BaseTestCase
 {
-    /** @var ChannelFactory */
-    private $channelFactory;
     /** @var AbstractConnection */
     private $connection;
+    /** @var Factory */
+    private $factory;
+
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connection = Factory::create($this->dummyLogger)->createConnection(getenv('RABBITMQ_URL'));
-        $this->channelFactory = new ChannelFactory($this->dummyLogger, $this->connection);
+        $this->factory = Factory::create($this->dummyLogger);
+        $this->connection = $this->factory->createConnection(getenv('RABBITMQ_URL'));
         $this->purgeQueue();
     }
 
@@ -46,7 +46,7 @@ class QueueTest extends BaseTestCase
         $consumer = $this->createMock(QueueConsumer::class);
         $consumer->expects($this->at(0))->method('consume')->with([$message]);
 
-        $queue = Queue::create(getenv('QUEUE_NAME'), $this->channelFactory, $this->dummyLogger);
+        $queue = $this->factory->createQueue(getenv('QUEUE_NAME'));
         $queue->send($message);
 
         $queue->consume($consumer);
@@ -102,7 +102,7 @@ class QueueTest extends BaseTestCase
      */
     public function consume_MessagesInQueue_MessagesConsumedOnlyOnce()
     {
-        $queue = Queue::create(getenv('QUEUE_NAME'), $this->channelFactory, $this->dummyLogger);
+        $queue = $this->factory->createQueue(getenv('QUEUE_NAME'));
 
         $message1 = ['test1'];
         $message2 = ['test2'];
@@ -121,20 +121,21 @@ class QueueTest extends BaseTestCase
      */
     public function send_MessageSent_MessageIsInQueue()
     {
-        Queue::create(getenv('QUEUE_NAME'), $this->channelFactory, $this->dummyLogger)->send(['test']);
+        $this->factory->createQueue(getenv('QUEUE_NAME'))->send(['test']);
         $this->assertQueueCount(1);
     }
 
     private function purgeQueue(): void
     {
-        $this->channelFactory->openQueue(getenv('QUEUE_NAME'))->queue_purge(getenv('QUEUE_NAME'));
-        $this->channelFactory->openQueue(getenv('QUEUE_NAME').'.error')->queue_purge(getenv('QUEUE_NAME').'.error');
+        $this->factory->openChannel(getenv('QUEUE_NAME'), getenv('RABBITMQ_URL'))->queue_purge(getenv('QUEUE_NAME'));
+        $this->factory->openChannel(getenv('QUEUE_NAME'), getenv('RABBITMQ_URL'))->queue_purge(getenv('QUEUE_NAME').'.error');
     }
 
     private function assertQueueCount(int $expected): void
     {
-        $result = $this->channelFactory->openQueue(getenv('QUEUE_NAME'))
-            ->queue_declare(getenv('QUEUE_NAME'), false, true, false, false);
+        $queueName = getenv('QUEUE_NAME');
+        $result = $this->factory->openChannel($queueName, getenv('RABBITMQ_URL'))
+            ->queue_declare($queueName, false, true, false, false);
         $this->assertEquals($expected, $result[1], 'message count mismatch');
         $this->assertEquals(0, $result[2], 'consumer active');
     }
