@@ -1,10 +1,10 @@
 <?php
 
-use AmqpWrapper\ConnectionFactory;
-use AmqpWrapper\MessageBuffer;
-use AmqpWrapper\Queue;
-use AmqpWrapper\ChannelFactory;
-use AmqpWrapper\QueueConsumer;
+use Emartech\AmqpWrapper\ConnectionFactory;
+use Emartech\AmqpWrapper\MessageBuffer;
+use Emartech\AmqpWrapper\Queue;
+use Emartech\AmqpWrapper\ChannelFactory;
+use Emartech\AmqpWrapper\QueueConsumer;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
@@ -26,6 +26,9 @@ class QueueTest extends BaseTestCase
         $this->purgeQueue();
     }
 
+    /**
+     * @throws Exception
+     */
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -34,6 +37,7 @@ class QueueTest extends BaseTestCase
 
     /**
      * @test
+     * @throws ErrorException
      */
     public function consume_WaitTimeout_ConsumedMessagesSent()
     {
@@ -50,6 +54,7 @@ class QueueTest extends BaseTestCase
 
     /**
      * @test
+     * @throws ErrorException
      */
     public function consume_Error_MessagesRejected()
     {
@@ -71,6 +76,7 @@ class QueueTest extends BaseTestCase
 
     /**
      * @test
+     * @throws ErrorException
      */
     public function consume_MessagesProcessed_MessagesAcknowledged()
     {
@@ -92,6 +98,7 @@ class QueueTest extends BaseTestCase
     /**
      * @test
      * @medium
+     * @throws ErrorException
      */
     public function consume_MessagesInQueue_MessagesConsumedOnlyOnce()
     {

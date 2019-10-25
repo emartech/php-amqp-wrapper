@@ -1,6 +1,6 @@
 <?php
 
-use AmqpWrapper\MessageBuffer;
+use Emartech\AmqpWrapper\MessageBuffer;
 use PhpAmqpLib\Message\AMQPMessage;
 use Test\BaseTestCase;
 

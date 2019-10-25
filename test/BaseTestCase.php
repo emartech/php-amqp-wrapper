@@ -9,7 +9,7 @@ use Psr\Log\LoggerInterface;
 class BaseTestCase extends TestCase
 {
     /**
-     * @var MockObject
+     * @var MockObject|LoggerInterface
      */
     protected $dummyLogger;
 

@@ -19,7 +19,7 @@
   },
   "autoload": {
     "psr-4": {
-        "AmqpWrapper\\": "src/",
+        "Emartech\\AmqpWrapper\\": "src/",
         "Test\\": "test/"
     }
   }

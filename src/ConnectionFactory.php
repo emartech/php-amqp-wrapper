@@ -1,6 +1,6 @@
 <?php
 
-namespace AmqpWrapper;
+namespace Emartech\AmqpWrapper;
 
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPSSLConnection;

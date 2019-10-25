@@ -1,6 +1,6 @@
 <?php
 
-namespace AmqpWrapper;
+namespace Emartech\AmqpWrapper;
 
 
 class MessageBuffer
