@@ -22,7 +22,7 @@ class FactoryTest extends BaseTestCase
      */
     public function createConnection_ConnectionIsNotSecure_ProperConnectionObjectReturned()
     {
-        $this->assertInstanceOf(AMQPStreamConnection::class, $this->factory->createConnection(getenv('RABBITMQ_URL')));
+        $this->assertInstanceOf(AMQPStreamConnection::class, $this->factory->createConnection($this->getRabbitUrlForTest()));
     }
 
     /**
@@ -31,7 +31,7 @@ class FactoryTest extends BaseTestCase
     public function createConnection_ConnectionIsSecure_ProperConnectionObjectReturned()
     {
         $this->markTestIncomplete('dev env does not support ssl connections yet');
-        $this->assertInstanceOf(AMQPSSLConnection::class, $this->factory->createConnection(str_replace('amqp', 'amqps', getenv('RABBITMQ_URL'))));
+        $this->assertInstanceOf(AMQPSSLConnection::class, $this->factory->createConnection(str_replace('amqp', 'amqps', $this->getRabbitUrlForTest())));
     }
 
     /**
@@ -42,5 +42,13 @@ class FactoryTest extends BaseTestCase
         $this->assertExceptionThrown(AMQPRuntimeException::class, function () {
             $this->factory->createConnection('invalid://url');
         });
+    }
+
+    /**
+     * @return array|false|string
+     */
+    private function getRabbitUrlForTest()
+    {
+        return getenv('RABBITMQ_URL');
     }
 }

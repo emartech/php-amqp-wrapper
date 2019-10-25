@@ -22,7 +22,7 @@ class QueueTest extends BaseTestCase
     {
         parent::setUp();
         $this->factory = Factory::create($this->dummyLogger);
-        $this->connection = $this->factory->createConnection(getenv('RABBITMQ_URL'));
+        $this->connection = $this->factory->createConnection($this->getRabbitUrlForTest());
         $this->purgeQueue();
     }
 
@@ -46,7 +46,7 @@ class QueueTest extends BaseTestCase
         $consumer = $this->createMock(QueueConsumer::class);
         $consumer->expects($this->at(0))->method('consume')->with([$message]);
 
-        $queue = $this->factory->createQueue(getenv('QUEUE_NAME'));
+        $queue = $this->factory->createQueue($this->getQueueNameForTest());
         $queue->send($message);
 
         $queue->consume($consumer);
@@ -102,7 +102,7 @@ class QueueTest extends BaseTestCase
      */
     public function consume_MessagesInQueue_MessagesConsumedOnlyOnce()
     {
-        $queue = $this->factory->createQueue(getenv('QUEUE_NAME'));
+        $queue = $this->factory->createQueue($this->getQueueNameForTest());
 
         $message1 = ['test1'];
         $message2 = ['test2'];
@@ -121,20 +121,20 @@ class QueueTest extends BaseTestCase
      */
     public function send_MessageSent_MessageIsInQueue()
     {
-        $this->factory->createQueue(getenv('QUEUE_NAME'))->send(['test']);
+        $this->factory->createQueue($this->getQueueNameForTest())->send(['test']);
         $this->assertQueueCount(1);
     }
 
     private function purgeQueue(): void
     {
-        $this->factory->openChannel(getenv('QUEUE_NAME'), getenv('RABBITMQ_URL'))->queue_purge(getenv('QUEUE_NAME'));
-        $this->factory->openChannel(getenv('QUEUE_NAME'), getenv('RABBITMQ_URL'))->queue_purge(getenv('QUEUE_NAME').'.error');
+        $this->factory->openChannel($this->getQueueNameForTest(), $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest());
+        $this->factory->openChannel($this->getQueueNameForTest(), $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest() .'.error');
     }
 
     private function assertQueueCount(int $expected): void
     {
-        $queueName = getenv('QUEUE_NAME');
-        $result = $this->factory->openChannel($queueName, getenv('RABBITMQ_URL'))
+        $queueName = $this->getQueueNameForTest();
+        $result = $this->factory->openChannel($queueName, $this->getRabbitUrlForTest())
             ->queue_declare($queueName, false, true, false, false);
         $this->assertEquals($expected, $result[1], 'message count mismatch');
         $this->assertEquals(0, $result[2], 'consumer active');
@@ -147,5 +147,15 @@ class QueueTest extends BaseTestCase
         $rawMessage->delivery_info['delivery_tag'] = '';
 
         return $rawMessage;
+    }
+
+    private function getQueueNameForTest()
+    {
+        return getenv('QUEUE_NAME');
+    }
+
+    private function getRabbitUrlForTest()
+    {
+        return getenv('RABBITMQ_URL');
     }
 }
