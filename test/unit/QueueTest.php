@@ -44,7 +44,7 @@ class QueueTest extends BaseTestCase
         $message = ['test1'];
 
         $consumer = $this->createMock(QueueConsumer::class);
-        $consumer->expects($this->at(0))->method('consume')->with([$message]);
+        $consumer->expects($this->at(0))->method('consume')->with($message);
 
         $queue = $this->factory->createQueue($this->getQueueNameForTest());
         $queue->send($message);
@@ -110,8 +110,8 @@ class QueueTest extends BaseTestCase
         $queue->send($message2);
 
         $consumer = $this->createMock(QueueConsumer::class);
-        $consumer->expects($this->at(0))->method('consume')->with([$message1, $message2]);
-        $consumer->expects($this->at(1))->method('consume')->with([]);
+        $consumer->expects($this->at(0))->method('consume')->with($message1);
+        $consumer->expects($this->at(1))->method('consume')->with($message2);
 
         $queue->consume($consumer);
     }

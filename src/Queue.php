@@ -31,16 +31,14 @@ class Queue
 
     private function processMessages(QueueConsumer $consumer): void
     {
-        $messages = [];
-        foreach ($this->messageBuffer->getMessages() as $message) {
-            $messageBody = json_decode($message->body, true);
-            $messages[] = $messageBody;
-        }
 
         try {
-            $consumer->consume($messages);
+            foreach ($this->messageBuffer->getMessages() as $message) {
+                $messageBody = json_decode($message->body, true);
+                $consumer->consume($messageBody);
+            }
             $this->ackMessages();
-            $this->logInfo('consume_success', 'messages consumed', ['message_count' => count($messages)]);
+            $this->logInfo('consume_success', 'messages consumed', ['message_count' => $this->messageBuffer->getMessageCount()]);
         } catch (Exception $ex) {
             $this->rejectMessages($ex);
         }
