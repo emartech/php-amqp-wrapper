@@ -3,9 +3,7 @@
 namespace Emartech\AmqpWrapper;
 
 use ErrorException;
-use Exception;
 use PhpAmqpLib\Channel\AMQPChannel;
-use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -21,11 +19,11 @@ class Queue
 
     public static function create(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, LoggerInterface $logger): self
     {
-        $channelWrapper = new Channel($channel, $logger);
-        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer($channelWrapper), $logger);
+        $channelWrapper = new Channel($channel, $logger, $queueName);
+        return new self($queueName, $channelWrapper, $timeout, $batchSize, new MessageBuffer($channelWrapper, $batchSize), $logger);
     }
 
-    public function __construct(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)
+    public function __construct(string $queueName, Channel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)
     {
         $this->logger = $logger;
         $this->channel = $channel;
@@ -37,66 +35,12 @@ class Queue
 
     public function send(array $messageBody): void
     {
-        $message = $this->createMessage($messageBody);
-        $message->publish();
-
-        $this->logDebug('message_sent', json_encode($messageBody), 'AMQP message sent');
+        $this->createMessage($messageBody)->publish();
     }
 
-    /**
-     * @throws ErrorException
-     */
-    public function consume(QueueConsumer $consumer): void
+    public function createMessage($messageParams): Message
     {
-        $consumerTag = 'consumer' . getmypid();
-        $this->channel->basic_qos(0, $this->batchSize, false);
-        $this->channel->basic_consume($this->queueName, $consumerTag, false, false, false, false, function (AMQPMessage $rawMessage) use ($consumer) {
-            $this->messageBuffer->addMessage($rawMessage);
-            $this->logDebug('consume_prepare', $rawMessage->body, 'Consuming message');
-
-            if ($this->messageBuffer->getMessageCount() >= $this->batchSize) {
-                $this->processMessages($consumer);
-            }
-        });
-
-        try {
-            do {
-                $this->channel->wait(null, false, $this->timeout);
-            } while ($this->channel->is_consuming());
-        } catch (AMQPTimeoutException $e) {
-            $this->processMessages($consumer);
-        }
-
-        $this->channel->basic_cancel($consumerTag);
-    }
-
-    private function processMessages(QueueConsumer $consumer): void
-    {
-        $consumedCount = 0;
-        $failedCount = 0;
-        foreach ($this->messageBuffer->getMessages() as $message) {
-            try {
-                $consumer->consume($message);
-                $consumedCount++;
-                $this->logDebug('message_consumed', $message->getRawBody(), 'ACK-ing message');
-            } catch (Throwable $t) {
-                $this->logError('consume_failure', $message->getRawBody(), $t);
-                $consumer->error($message, $t);
-                $failedCount++;
-                $this->logDebug('message_failed', $message->getRawBody(), 'rejecting message');
-            }
-        }
-        $this->logInfo('consume_success', 'messages consumed', [
-            'messages_consumed_count' => $consumedCount,
-            'messages_failed_count' => $failedCount,
-        ]);
-
-        $this->messageBuffer->flush();
-    }
-
-    private function createMessage($messageParams): Message
-    {
-        return new Message(new Channel($this->channel, $this->logger), new AMQPMessage(
+        return new Message($this->channel, new AMQPMessage(
             json_encode($messageParams),
             [
                 'content_type' => 'text/plain',
@@ -105,14 +49,49 @@ class Queue
         ));
     }
 
-    private function logError(string $event, string $rawMessage, Exception $ex): void
+    /**
+     * @throws ErrorException
+     */
+    public function consume(QueueConsumer $consumer): void
     {
-        $this->logger->error($ex->getMessage(), [
-            'queue' => $this->queueName,
-            'event' => $event,
-            'raw_message' => $rawMessage,
-            'exception' => $ex,
+        $this->channel->consume($this, $consumer, $this->batchSize, $this->timeout);
+    }
+
+    public function addMessage(AMQPMessage $rawMessage)
+    {
+        $this->messageBuffer->addMessage($rawMessage);
+    }
+
+    public function isBufferFull()
+    {
+        return $this->messageBuffer->isFull();
+    }
+
+    public function processMessages(QueueConsumer $consumer, bool $force): void
+    {
+        if (!$force && !$this->messageBuffer->isFull()) {
+            return;
+        }
+
+        $consumedCount = 0;
+        $failedCount = 0;
+        foreach ($this->messageBuffer->getMessages() as $message) {
+            try {
+                $consumer->consume($message);
+                $consumedCount++;
+            } catch (Throwable $t) {
+                $consumer->error($message, $t);
+                $failedCount++;
+            }
+        }
+
+        $this->logInfo('consume_success', 'messages consumed', [
+            'messages_consumed_count' => $consumedCount,
+            'messages_failed_count' => $failedCount,
+            'messages_processed_count' => $failedCount + $consumedCount,
         ]);
+
+        $this->messageBuffer->flush();
     }
 
     private function logInfo(string $event, string $logMessage, array $context = []): void
@@ -126,14 +105,5 @@ class Queue
                 $context
             )
         );
-    }
-
-    private function logDebug(string $event, string $rawMessage, string $logMessage): void
-    {
-        $this->logger->debug($logMessage, [
-            'queue' => $this->queueName,
-            'event' => $event,
-            'raw_message' => $rawMessage,
-        ]);
     }
 }

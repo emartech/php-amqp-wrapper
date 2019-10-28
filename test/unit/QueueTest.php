@@ -87,12 +87,14 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $channel->expects($this->at(0))->method('basic_reject');
         $channel->expects($this->at(1))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer(new Channel($channel, $this->dummyLogger));
+        $batchSize = 1;
+        $channelWrapper = new Channel($channel, $this->dummyLogger, 'queue_name');
+        $messageBuffer = new MessageBuffer($channelWrapper, $batchSize);
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));
 
-        $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
+        $queue = new Queue('dummy', $channelWrapper, 1, $batchSize, $messageBuffer, $this->dummyLogger);
         $queue->consume(new SimpleConsumer($consumer));
     }
 
@@ -106,12 +108,14 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
         $channel->expects($this->exactly(2))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer(new Channel($channel, $this->dummyLogger));
+        $batchSize = 1;
+        $channelWrapper = new Channel($channel, $this->dummyLogger, 'queue_name');
+        $messageBuffer = new MessageBuffer($channelWrapper, $batchSize);
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));
 
-        $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
+        $queue = new Queue('dummy', $channelWrapper, 1, $batchSize, $messageBuffer, $this->dummyLogger);
         $queue->consume(new SimpleConsumer($this->createMock(QueueConsumer::class)));
     }
 

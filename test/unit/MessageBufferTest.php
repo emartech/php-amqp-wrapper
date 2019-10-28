@@ -14,10 +14,12 @@ class MessageBufferTest extends BaseTestCase
      */
     public function allTestCases_Perfect()
     {
+        $batchSize = 123;
+
         /** @var AMQPChannel $channel */
         $channel = $this->mock(AMQPChannel::class);
-        $channelWrapper = new Channel($channel, $this->dummyLogger);
-        $buffer = new MessageBuffer($channelWrapper);
+        $channelWrapper = new Channel($channel, $this->dummyLogger, 'queue_name');
+        $buffer = new MessageBuffer($channelWrapper, $batchSize);
 
         $message1 = $this->createMock(AMQPMessage::class);
         $buffer->addMessage($message1);
