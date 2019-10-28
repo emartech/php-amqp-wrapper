@@ -21,7 +21,7 @@ class Queue
 
     public static function create(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, LoggerInterface $logger): self
     {
-        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer($channel), $logger);
+        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer(new Channel($channel, $logger)), $logger);
     }
 
     public function __construct(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)

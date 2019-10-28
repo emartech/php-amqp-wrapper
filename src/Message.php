@@ -3,7 +3,6 @@
 namespace Emartech\AmqpWrapper;
 
 
-use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class Message
@@ -11,7 +10,7 @@ class Message
     private $channel;
     private $message;
 
-    public function __construct(AMQPChannel $channel, AMQPMessage $message)
+    public function __construct(Channel $channel, AMQPMessage $message)
     {
         $this->message = $message;
         $this->channel = $channel;
@@ -24,7 +23,7 @@ class Message
 
     public function ack(): void
     {
-        $this->channel->basic_ack($this->message->delivery_info['delivery_tag']);
+        $this->channel->ack($this->message);
     }
 
     public function getRawBody(): string
@@ -34,6 +33,6 @@ class Message
 
     public function requeue()
     {
-        $this->channel->basic_reject($this->message->delivery_info['delivery_tag'], true);
+        $this->channel->requeue($this->message);
     }
 }

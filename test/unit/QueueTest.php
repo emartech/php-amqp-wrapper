@@ -1,5 +1,6 @@
 <?php
 
+use Emartech\AmqpWrapper\Channel;
 use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
@@ -86,7 +87,7 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $channel->expects($this->at(0))->method('basic_reject');
         $channel->expects($this->at(1))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer($channel);
+        $messageBuffer = new MessageBuffer(new Channel($channel, $this->dummyLogger));
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));
@@ -105,7 +106,7 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
         $channel->expects($this->exactly(2))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer($channel);
+        $messageBuffer = new MessageBuffer(new Channel($channel, $this->dummyLogger));
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));

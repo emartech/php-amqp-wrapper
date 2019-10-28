@@ -3,19 +3,18 @@
 namespace Emartech\AmqpWrapper;
 
 
-use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class MessageBuffer
 {
-    /** @var AMQPChannel */
+    /** @var Channel */
     private $channel;
 
     /** @var Message[] */
     private $messages = [];
 
 
-    public function __construct(AMQPChannel $channel)
+    public function __construct(Channel $channel)
     {
         $this->channel = $channel;
     }
