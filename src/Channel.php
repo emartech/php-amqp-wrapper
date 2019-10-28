@@ -22,8 +22,13 @@ class Channel
         $this->channel->basic_ack($message->delivery_info['delivery_tag']);
     }
 
-    public function requeue(AMQPMessage $message)
+    public function requeue(AMQPMessage $message): void
     {
         $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+    }
+
+    public function publish(AMQPMessage $message)
+    {
+        $this->channel->basic_publish($message, 'amq.direct');
     }
 }

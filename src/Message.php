@@ -35,4 +35,9 @@ class Message
     {
         $this->channel->requeue($this->message);
     }
+
+    public function publish(): void
+    {
+        $this->channel->publish($this->message);
+    }
 }

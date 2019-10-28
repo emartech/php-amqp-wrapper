@@ -21,7 +21,8 @@ class Queue
 
     public static function create(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, LoggerInterface $logger): self
     {
-        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer(new Channel($channel, $logger)), $logger);
+        $channelWrapper = new Channel($channel, $logger);
+        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer($channelWrapper), $logger);
     }
 
     public function __construct(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)
@@ -32,6 +33,14 @@ class Queue
         $this->timeout = $timeout;
         $this->batchSize = $batchSize;
         $this->messageBuffer = $messageBuffer;
+    }
+
+    public function send(array $messageBody): void
+    {
+        $message = $this->createMessage($messageBody);
+        $message->publish();
+
+        $this->logDebug('message_sent', json_encode($messageBody), 'AMQP message sent');
     }
 
     /**
@@ -53,7 +62,7 @@ class Queue
         try {
             do {
                 $this->channel->wait(null, false, $this->timeout);
-            } while (count($this->channel->callbacks));
+            } while ($this->channel->is_consuming());
         } catch (AMQPTimeoutException $e) {
             $this->processMessages($consumer);
         }
@@ -85,23 +94,15 @@ class Queue
         $this->messageBuffer->flush();
     }
 
-    public function send(array $messageBody): void
+    private function createMessage($messageParams): Message
     {
-        $message = $this->createMessage($messageBody);
-        $this->channel->basic_publish($message, 'amq.direct');
-
-        $this->logDebug('message_sent', json_encode($messageBody), 'AMQP message sent');
-    }
-
-    private function createMessage($messageParams): AMQPMessage
-    {
-        return new AMQPMessage(
+        return new Message(new Channel($this->channel, $this->logger), new AMQPMessage(
             json_encode($messageParams),
             [
                 'content_type' => 'text/plain',
                 'delivery_mode' => 2,
             ]
-        );
+        ));
     }
 
     private function logError(string $event, string $rawMessage, Exception $ex): void
