@@ -1,22 +1,38 @@
 <?php
 
 use Emartech\AmqpWrapper\Factory;
+use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\QueueConsumer;
+use Emartech\AmqpWrapper\SimpleConsumer;
 use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 
-class QueueTest extends BaseTestCase
+class QueueTest extends BaseTestCase implements QueueConsumer
 {
     /** @var AbstractConnection */
     private $connection;
     /** @var Factory */
     private $factory;
+    /** @var Message[]|array */
+    private $consumed = [];
+    /** @var Message[]|array */
+    private $failed = [];
 
+
+    public function consume(Message $message): void
+    {
+        $this->consumed[] = $message;
+    }
+
+    public function error(Message $message, Throwable $t): void
+    {
+        $this->failed[] = $message;
+    }
 
     protected function setUp(): void
     {
@@ -24,6 +40,8 @@ class QueueTest extends BaseTestCase
         $this->factory = Factory::create($this->dummyLogger);
         $this->connection = $this->factory->createConnection($this->getRabbitUrlForTest());
         $this->purgeQueue();
+        $this->consumed = [];
+        $this->failed = [];
     }
 
     /**
@@ -43,13 +61,14 @@ class QueueTest extends BaseTestCase
     {
         $message = ['test1'];
 
-        $consumer = $this->createMock(QueueConsumer::class);
-        $consumer->expects($this->at(0))->method('consume')->with($message);
-
         $queue = $this->factory->createQueue($this->getQueueNameForTest());
         $queue->send($message);
 
-        $queue->consume($consumer);
+        $queue->consume($this);
+
+        $this->assertCount(1, $this->consumed);
+        $this->assertCount(0, $this->failed);
+        $this->assertEquals($message, $this->consumed[0]->getContents());
     }
 
     /**
@@ -73,7 +92,7 @@ class QueueTest extends BaseTestCase
             ->addMessage($this->mockRawMessage(['test2']));
 
         $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
-        $queue->consume($consumer);
+        $queue->consume(new SimpleConsumer($consumer));
     }
 
     /**
@@ -82,8 +101,6 @@ class QueueTest extends BaseTestCase
      */
     public function consume_MessagesProcessed_MessagesAcknowledged()
     {
-        $consumer = $this->createMock(QueueConsumer::class);
-
         $channel = $this->createMock(AMQPChannel::class);
         $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
         $channel->expects($this->exactly(2))->method('basic_ack');
@@ -94,7 +111,7 @@ class QueueTest extends BaseTestCase
             ->addMessage($this->mockRawMessage(['test2']));
 
         $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
-        $queue->consume($consumer);
+        $queue->consume(new SimpleConsumer($this->createMock(QueueConsumer::class)));
     }
 
     /**
@@ -111,11 +128,12 @@ class QueueTest extends BaseTestCase
         $queue->send($message1);
         $queue->send($message2);
 
-        $consumer = $this->createMock(QueueConsumer::class);
-        $consumer->expects($this->at(0))->method('consume')->with($message1);
-        $consumer->expects($this->at(1))->method('consume')->with($message2);
+        $queue->consume($this);
 
-        $queue->consume($consumer);
+        $this->assertCount(2, $this->consumed);
+        $this->assertCount(0, $this->failed);
+        $this->assertEquals($message1, $this->consumed[0]->getContents());
+        $this->assertEquals($message2, $this->consumed[1]->getContents());
     }
 
     /**

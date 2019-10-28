@@ -64,24 +64,22 @@ class Queue
     private function processMessages(QueueConsumer $consumer): void
     {
         $consumedCount = 0;
-        $rejectedCount = 0;
+        $failedCount = 0;
         foreach ($this->messageBuffer->getMessages() as $message) {
             try {
-                $messageBody = $message->getContents();
-                $consumer->consume($messageBody);
-                $message->ack();
+                $consumer->consume($message);
                 $consumedCount++;
-                $this->logDebug('message_ack', $message->getRawBody(), 'ACK-ing message');
+                $this->logDebug('message_consumed', $message->getRawBody(), 'ACK-ing message');
             } catch (Throwable $t) {
                 $this->logError('consume_failure', $message->getRawBody(), $t);
-                $message->requeue();
-                $rejectedCount++;
-                $this->logDebug('message_reject', $message->getRawBody(), 'rejecting message');
+                $consumer->error($message, $t);
+                $failedCount++;
+                $this->logDebug('message_failed', $message->getRawBody(), 'rejecting message');
             }
         }
         $this->logInfo('consume_success', 'messages consumed', [
             'messages_consumed_count' => $consumedCount,
-            'messages_rejected_count' => $rejectedCount,
+            'messages_failed_count' => $failedCount,
         ]);
 
         $this->messageBuffer->flush();
