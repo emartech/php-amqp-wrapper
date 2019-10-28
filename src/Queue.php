@@ -29,23 +29,6 @@ class Queue
         $this->messageBuffer = $messageBuffer;
     }
 
-    private function processMessages(QueueConsumer $consumer): void
-    {
-
-        try {
-            foreach ($this->messageBuffer->getMessages() as $message) {
-                $messageBody = json_decode($message->body, true);
-                $consumer->consume($messageBody);
-            }
-            $this->ackMessages();
-            $this->logInfo('consume_success', 'messages consumed', ['message_count' => $this->messageBuffer->getMessageCount()]);
-        } catch (Exception $ex) {
-            $this->rejectMessages($ex);
-        }
-
-        $this->messageBuffer->flush();
-    }
-
     /**
      * @throws ErrorException
      */
@@ -73,10 +56,29 @@ class Queue
         $this->channel->basic_cancel($consumerTag);
     }
 
-    private function ackMessage(AMQPMessage $message): void
+    private function processMessages(QueueConsumer $consumer): void
     {
-        $this->channel->basic_ack($message->delivery_info['delivery_tag']);
-        $this->logDebug('message_ack', $message->body, 'ACK-ing message');
+
+        $amqpMessages = $this->messageBuffer->getMessages();
+        try {
+            foreach ($amqpMessages as $message) {
+                $messageBody = json_decode($message->body, true);
+                $consumer->consume($messageBody);
+            }
+            foreach ($amqpMessages as $message) {
+                $this->channel->basic_ack($message->delivery_info['delivery_tag']);
+                $this->logDebug('message_ack', $message->body, 'ACK-ing message');
+            }
+            $this->logInfo('consume_success', 'messages consumed', ['message_count' => $this->messageBuffer->getMessageCount()]);
+        } catch (Exception $ex) {
+            foreach ($amqpMessages as $message) {
+                $this->logError('consume_failure', $message->body, $ex);
+                $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+                $this->logDebug('message_reject', $message->body, 'rejecting message');
+            }
+        }
+
+        $this->messageBuffer->flush();
     }
 
     public function send(array $messageBody): void
@@ -96,22 +98,6 @@ class Queue
                 'delivery_mode' => 2,
             ]
         );
-    }
-
-    private function ackMessages(): void
-    {
-        foreach ($this->messageBuffer->getMessages() as $message) {
-            $this->ackMessage($message);
-        }
-    }
-
-    private function rejectMessages(Exception $ex): void
-    {
-        foreach ($this->messageBuffer->getMessages() as $message) {
-            $this->logError('consume_failure', $message->body, $ex);
-            $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
-            $this->logDebug('message_reject', $message->body, 'rejecting message');
-        }
     }
 
     private function logError(string $event, string $rawMessage, Exception $ex): void
