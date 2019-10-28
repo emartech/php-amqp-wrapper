@@ -8,6 +8,7 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 class Queue
 {
@@ -58,25 +59,26 @@ class Queue
 
     private function processMessages(QueueConsumer $consumer): void
     {
-
-        $amqpMessages = $this->messageBuffer->getMessages();
-        try {
-            foreach ($amqpMessages as $message) {
+        $consumedCount = 0;
+        $rejectedCount = 0;
+        foreach ($this->messageBuffer->getMessages() as $message) {
+            try {
                 $messageBody = json_decode($message->body, true);
                 $consumer->consume($messageBody);
-            }
-            foreach ($amqpMessages as $message) {
                 $this->channel->basic_ack($message->delivery_info['delivery_tag']);
+                $consumedCount++;
                 $this->logDebug('message_ack', $message->body, 'ACK-ing message');
-            }
-            $this->logInfo('consume_success', 'messages consumed', ['message_count' => $this->messageBuffer->getMessageCount()]);
-        } catch (Exception $ex) {
-            foreach ($amqpMessages as $message) {
-                $this->logError('consume_failure', $message->body, $ex);
+            } catch (Throwable $t) {
+                $this->logError('consume_failure', $message->body, $t);
                 $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+                $rejectedCount++;
                 $this->logDebug('message_reject', $message->body, 'rejecting message');
             }
         }
+        $this->logInfo('consume_success', 'messages consumed', [
+            'messages_consumed_count' => $consumedCount,
+            'messages_rejected_count' => $rejectedCount,
+        ]);
 
         $this->messageBuffer->flush();
     }

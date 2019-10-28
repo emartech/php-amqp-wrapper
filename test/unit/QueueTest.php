@@ -59,11 +59,13 @@ class QueueTest extends BaseTestCase
     public function consume_Error_MessagesRejected()
     {
         $consumer = $this->createMock(QueueConsumer::class);
-        $consumer->expects($this->once())->method('consume')->willThrowException(new Exception());
+        $consumer->expects($this->at(0))->method('consume')->willThrowException(new Exception());
+        $consumer->expects($this->at(1))->method('consume');
 
         $channel = $this->createMock(AMQPChannel::class);
         $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
-        $channel->expects($this->exactly(2))->method('basic_reject');
+        $channel->expects($this->at(0))->method('basic_reject');
+        $channel->expects($this->at(1))->method('basic_ack');
 
         $messageBuffer = new MessageBuffer();
         $messageBuffer
