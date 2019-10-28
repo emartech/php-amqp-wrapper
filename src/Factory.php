@@ -36,7 +36,7 @@ class Factory
 
     public function createQueue(string $queueName): Queue
     {
-        return new Queue($queueName, $this->openChannel($queueName, $this->connectionUrl), $this->waitTimeout, $this->batchSize, new MessageBuffer(), $this->logger);
+        return Queue::create($queueName, $this->openChannel($queueName, $this->connectionUrl), $this->waitTimeout, $this->batchSize, $this->logger);
     }
 
     public function openChannel(string $queueName, string $connectionUrl): AMQPChannel

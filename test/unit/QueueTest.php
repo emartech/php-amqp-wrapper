@@ -67,7 +67,7 @@ class QueueTest extends BaseTestCase
         $channel->expects($this->at(0))->method('basic_reject');
         $channel->expects($this->at(1))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer();
+        $messageBuffer = new MessageBuffer($channel);
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));
@@ -88,7 +88,7 @@ class QueueTest extends BaseTestCase
         $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
         $channel->expects($this->exactly(2))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer();
+        $messageBuffer = new MessageBuffer($channel);
         $messageBuffer
             ->addMessage($this->mockRawMessage(['test1']))
             ->addMessage($this->mockRawMessage(['test2']));

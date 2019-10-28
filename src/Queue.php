@@ -19,6 +19,10 @@ class Queue
     private $messageBuffer;
     private $batchSize = 2;
 
+    public static function create(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, LoggerInterface $logger): self
+    {
+        return new self($queueName, $channel, $timeout, $batchSize, new MessageBuffer($channel), $logger);
+    }
 
     public function __construct(string $queueName, AMQPChannel $channel, int $timeout, int $batchSize, MessageBuffer $messageBuffer, LoggerInterface $logger)
     {
@@ -65,12 +69,12 @@ class Queue
             try {
                 $messageBody = $message->getContents();
                 $consumer->consume($messageBody);
-                $message->ack($this->channel);
+                $message->ack();
                 $consumedCount++;
                 $this->logDebug('message_ack', $message->getRawBody(), 'ACK-ing message');
             } catch (Throwable $t) {
                 $this->logError('consume_failure', $message->getRawBody(), $t);
-                $message->requeue($this->channel);
+                $message->requeue();
                 $rejectedCount++;
                 $this->logDebug('message_reject', $message->getRawBody(), 'rejecting message');
             }

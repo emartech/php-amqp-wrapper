@@ -8,11 +8,13 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class Message
 {
+    private $channel;
     private $message;
 
-    public function __construct(AMQPMessage $message)
+    public function __construct(AMQPChannel $channel, AMQPMessage $message)
     {
         $this->message = $message;
+        $this->channel = $channel;
     }
 
     public function getContents(): array
@@ -20,9 +22,9 @@ class Message
         return json_decode($this->message->getBody(), true);
     }
 
-    public function ack(AMQPChannel $channel): void
+    public function ack(): void
     {
-        $channel->basic_ack($this->message->delivery_info['delivery_tag']);
+        $this->channel->basic_ack($this->message->delivery_info['delivery_tag']);
     }
 
     public function getRawBody(): string
@@ -30,8 +32,8 @@ class Message
         return $this->message->getBody();
     }
 
-    public function requeue(AMQPChannel $channel)
+    public function requeue()
     {
-        $channel->basic_reject($this->message->delivery_info['delivery_tag'], true);
+        $this->channel->basic_reject($this->message->delivery_info['delivery_tag'], true);
     }
 }
