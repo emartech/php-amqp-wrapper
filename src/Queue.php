@@ -63,16 +63,16 @@ class Queue
         $rejectedCount = 0;
         foreach ($this->messageBuffer->getMessages() as $message) {
             try {
-                $messageBody = json_decode($message->body, true);
+                $messageBody = $message->getContents();
                 $consumer->consume($messageBody);
-                $this->channel->basic_ack($message->delivery_info['delivery_tag']);
+                $message->ack($this->channel);
                 $consumedCount++;
-                $this->logDebug('message_ack', $message->body, 'ACK-ing message');
+                $this->logDebug('message_ack', $message->getRawBody(), 'ACK-ing message');
             } catch (Throwable $t) {
-                $this->logError('consume_failure', $message->body, $t);
-                $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+                $this->logError('consume_failure', $message->getRawBody(), $t);
+                $message->requeue($this->channel);
                 $rejectedCount++;
-                $this->logDebug('message_reject', $message->body, 'rejecting message');
+                $this->logDebug('message_reject', $message->getRawBody(), 'rejecting message');
             }
         }
         $this->logInfo('consume_success', 'messages consumed', [

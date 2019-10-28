@@ -1,5 +1,6 @@
 <?php
 
+use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -19,7 +20,7 @@ class MessageBufferTest extends BaseTestCase
         $buffer->addMessage($message2);
 
         $this->assertEquals(2, $buffer->getMessageCount());
-        $this->assertEquals([$message1, $message2], $buffer->getMessages());
+        $this->assertEquals([new Message($message1), new Message($message2)], $buffer->getMessages());
 
         $buffer->flush();
         $this->assertEquals(0, $buffer->getMessageCount());

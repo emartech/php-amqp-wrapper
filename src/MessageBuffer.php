@@ -3,16 +3,21 @@
 namespace Emartech\AmqpWrapper;
 
 
+use PhpAmqpLib\Message\AMQPMessage;
+
 class MessageBuffer
 {
     private $messages = [];
 
-    public function addMessage($message): self
+    public function addMessage(AMQPMessage $message): self
     {
-        $this->messages[] = $message;
+        $this->messages[] = new Message($message);
         return $this;
     }
 
+    /**
+     * @return Message[]
+     */
     public function getMessages(): array
     {
         return $this->messages;

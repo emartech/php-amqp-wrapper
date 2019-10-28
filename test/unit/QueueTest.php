@@ -147,6 +147,7 @@ class QueueTest extends BaseTestCase
         $rawMessage = $this->createMock(AMQPMessage::class);
         $rawMessage->body = json_encode($message);
         $rawMessage->delivery_info['delivery_tag'] = '';
+        $rawMessage->expects($this->any())->method('getBody')->willReturn($rawMessage->body);
 
         return $rawMessage;
     }
