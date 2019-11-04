@@ -128,7 +128,7 @@ class QueueTest extends BaseTestCase
     private function purgeQueue(): void
     {
         $this->factory->openChannel($this->getQueueNameForTest(), $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest());
-        $this->factory->openChannel($this->getQueueNameForTest().'error', $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest().'.error');
+        $this->factory->openChannel($this->getQueueNameForTest().'.error', $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest().'.error');
     }
 
     private function assertQueueCount(int $expected): void
