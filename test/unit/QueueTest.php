@@ -61,14 +61,10 @@ class QueueTest extends BaseTestCase
         $consumer = $this->createMock(QueueConsumer::class);
         $consumer->expects($this->once())->method('consume')->willThrowException(new Exception());
 
-        $channel = $this->createMock(AMQPChannel::class);
-        $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
+        $channel = $this->mockChannelToTimeout();
         $channel->expects($this->exactly(2))->method('basic_reject');
 
-        $messageBuffer = new MessageBuffer();
-        $messageBuffer
-            ->addMessage($this->mockRawMessage(['test1']))
-            ->addMessage($this->mockRawMessage(['test2']));
+        $messageBuffer = $this->mockConsumableMessages([['test1'], ['test2']]);
 
         $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
         $queue->consume($consumer);
@@ -82,17 +78,30 @@ class QueueTest extends BaseTestCase
     {
         $consumer = $this->createMock(QueueConsumer::class);
 
-        $channel = $this->createMock(AMQPChannel::class);
-        $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
+        $channel = $this->mockChannelToTimeout();
         $channel->expects($this->exactly(2))->method('basic_ack');
 
-        $messageBuffer = new MessageBuffer();
-        $messageBuffer
-            ->addMessage($this->mockRawMessage(['test1']))
-            ->addMessage($this->mockRawMessage(['test2']));
+        $messageBuffer = $this->mockConsumableMessages([['test1'], ['test2']]);
 
         $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
         $queue->consume($consumer);
+    }
+
+    /**
+     * @test
+     * @throws ErrorException
+     */
+    public function consume_MessagesProcessedNoAckNeeded_MessagesNotAcknowledged()
+    {
+        $consumer = $this->createMock(QueueConsumer::class);
+
+        $channel = $this->mockChannelToTimeout();
+        $channel->expects($this->never())->method('basic_ack');
+
+        $messageBuffer = $this->mockConsumableMessages([['test1'], ['test2']]);
+
+        $queue = new Queue('dummy', $channel, 1, 1, $messageBuffer, $this->dummyLogger);
+        $queue->consume($consumer, false);
     }
 
     /**
@@ -157,5 +166,23 @@ class QueueTest extends BaseTestCase
     private function getRabbitUrlForTest()
     {
         return getenv('RABBITMQ_URL');
+    }
+
+    private function mockChannelToTimeout()
+    {
+        $channel = $this->createMock(AMQPChannel::class);
+        $channel->expects($this->once())->method('wait')->willThrowException(new AMQPTimeoutException());
+        return $channel;
+    }
+
+    private function mockConsumableMessages(array $messages): MessageBuffer
+    {
+        $messageBuffer = new MessageBuffer();
+
+        foreach ($messages as $message) {
+            $messageBuffer->addMessage($this->mockRawMessage($message));
+        }
+
+        return $messageBuffer;
     }
 }

@@ -29,7 +29,7 @@ class Queue
         $this->messageBuffer = $messageBuffer;
     }
 
-    private function processMessages(QueueConsumer $consumer): void
+    private function processMessages(QueueConsumer $consumer, bool $ackMessages): void
     {
         $messages = [];
         foreach ($this->messageBuffer->getMessages() as $message) {
@@ -39,7 +39,9 @@ class Queue
 
         try {
             $consumer->consume($messages);
-            $this->ackMessages();
+            if ($ackMessages) {
+                $this->ackMessages();
+            }
             $this->logInfo('consume_success', 'messages consumed', ['message_count' => count($messages)]);
         } catch (Exception $ex) {
             $this->rejectMessages($ex);
@@ -51,16 +53,16 @@ class Queue
     /**
      * @throws ErrorException
      */
-    public function consume(QueueConsumer $consumer): void
+    public function consume(QueueConsumer $consumer, bool $ackMessages = true): void
     {
         $consumerTag = 'consumer' . getmypid();
         $this->channel->basic_qos(0, $this->batchSize, false);
-        $this->channel->basic_consume($this->queueName, $consumerTag, false, false, false, false, function (AMQPMessage $rawMessage) use ($consumer) {
+        $this->channel->basic_consume($this->queueName, $consumerTag, false, false, false, false, function (AMQPMessage $rawMessage) use ($consumer, $ackMessages) {
             $this->messageBuffer->addMessage($rawMessage);
             $this->logDebug('consume_prepare', $rawMessage->body, 'Consuming message');
 
             if ($this->messageBuffer->getMessageCount() >= $this->batchSize) {
-                $this->processMessages($consumer);
+                $this->processMessages($consumer, $ackMessages);
             }
         });
 
@@ -69,7 +71,7 @@ class Queue
                 $this->channel->wait(null, false, $this->timeout);
             } while (count($this->channel->callbacks));
         } catch (AMQPTimeoutException $e) {
-            $this->processMessages($consumer);
+            $this->processMessages($consumer, $ackMessages);
         }
 
         $this->channel->basic_cancel($consumerTag);
