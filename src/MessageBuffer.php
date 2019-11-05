@@ -2,14 +2,8 @@
 
 namespace Emartech\AmqpWrapper;
 
-
-use PhpAmqpLib\Message\AMQPMessage;
-
 class MessageBuffer
 {
-    /** @var Channel */
-    private $channel;
-
     /** @var int */
     private $batchSize;
 
@@ -17,15 +11,14 @@ class MessageBuffer
     private $messages = [];
 
 
-    public function __construct(Channel $channel, int $batchSize)
+    public function __construct(int $batchSize)
     {
-        $this->channel = $channel;
         $this->batchSize = $batchSize;
     }
 
-    public function addMessage(AMQPMessage $message): self
+    public function addMessage(Message $message): self
     {
-        $this->messages[] = new Message($this->channel, $message);
+        $this->messages[] = $message;
         return $this;
     }
 
@@ -50,5 +43,10 @@ class MessageBuffer
     public function isFull(): bool
     {
         return $this->getMessageCount() >= $this->batchSize;
+    }
+
+    public function getSize(): int
+    {
+        return $this->batchSize;
     }
 }

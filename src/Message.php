@@ -10,7 +10,7 @@ class Message
     private $channel;
     private $message;
 
-    public function __construct(Channel $channel, AMQPMessage $message)
+    public function __construct(ChannelWrapper $channel, AMQPMessage $message)
     {
         $this->message = $message;
         $this->channel = $channel;

@@ -1,6 +1,6 @@
 <?php
 
-use Emartech\AmqpWrapper\Channel;
+use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\TestHelper\BaseTestCase;
@@ -18,13 +18,13 @@ class MessageBufferTest extends BaseTestCase
 
         /** @var AMQPChannel $channel */
         $channel = $this->mock(AMQPChannel::class);
-        $channelWrapper = new Channel($channel, $this->dummyLogger, 'queue_name');
-        $buffer = new MessageBuffer($channelWrapper, $batchSize);
+        $channelWrapper = new ChannelWrapper($channel, $this->dummyLogger, 'queue_name', 1);
+        $buffer = new MessageBuffer($batchSize);
 
         $message1 = $this->createMock(AMQPMessage::class);
-        $buffer->addMessage($message1);
+        $buffer->addMessage(new Message($channelWrapper, $message1));
         $message2 = $this->createMock(AMQPMessage::class);
-        $buffer->addMessage($message2);
+        $buffer->addMessage(new Message($channelWrapper, $message2));
 
         $this->assertEquals(2, $buffer->getMessageCount());
         $this->assertEquals([

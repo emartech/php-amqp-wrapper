@@ -3,22 +3,24 @@
 namespace Emartech\AmqpWrapper;
 
 use Exception;
-use Throwable;
 
 interface QueueConsumer
 {
+    public function getPrefetchCount(): int;
+
     /**
      * Process the message
      *
      * It is the consumer's responsibility to ack the message after processing it
+     * It is also the consumer's responsibility to catch any processing related errors or exceptions
+     * and handle them properly (requeue them for example)
+     *
      * @throws Exception
      */
     public function consume(Message $message): void;
 
     /**
-     * Handle errors
-     *
-     * It is the consumer's responsibility to reject/requeue the message when this happens
+     * Gets called after consumer timeout
      */
-    public function error(Message $message, Throwable $t): void;
+    public function timeOut(): void;
 }

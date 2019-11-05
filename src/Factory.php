@@ -18,25 +18,20 @@ class Factory
     private $logger;
     private $connectionUrl;
     private $waitTimeout;
-    private $batchSize;
 
 
-    public static function create(LoggerInterface $logger): self
-    {
-        return new self($logger, getenv('RABBITMQ_URL'), getenv("QUEUE_WAIT_TIMEOUT_SECONDS"), getenv('BATCH_SIZE'));
-    }
-
-    public function __construct(LoggerInterface $logger, string $connectionUrl, int $waitTimeout, int $batchSize)
+    public function __construct(LoggerInterface $logger, string $connectionUrl, int $waitTimeout)
     {
         $this->logger = $logger;
         $this->connectionUrl = $connectionUrl;
         $this->waitTimeout = $waitTimeout;
-        $this->batchSize = $batchSize;
     }
 
     public function createQueue(string $queueName): Queue
     {
-        return Queue::create($queueName, $this->openChannel($queueName, $this->connectionUrl), $this->waitTimeout, $this->batchSize, $this->logger);
+        return new ChannelWrapper(
+            $this->openChannel($queueName, $this->connectionUrl), $this->logger, $queueName, $this->waitTimeout
+        );
     }
 
     public function openChannel(string $queueName, string $connectionUrl): AMQPChannel

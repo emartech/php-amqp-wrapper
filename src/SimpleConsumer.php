@@ -2,14 +2,9 @@
 
 namespace Emartech\AmqpWrapper;
 
-
 use Exception;
 use Throwable;
 
-/**
- * This consumer encapsulates the former behavior of the wrapper library,
- * ie. it automatically acknowledges processed messages and automatically rejects failed ones
- */
 class SimpleConsumer implements QueueConsumer
 {
     private $delegate;
@@ -25,13 +20,20 @@ class SimpleConsumer implements QueueConsumer
      */
     public function consume(Message $message): void
     {
-        $this->delegate->consume($message);
-        $message->ack();
+        try {
+            $this->delegate->consume($message);
+            $message->ack();
+        } catch (Throwable $t) {
+            $message->requeue();
+        }
     }
 
-    public function error(Message $message, Throwable $t): void
+    public function timeOut(): void
     {
-        $message->requeue();
-        $this->delegate->error($message, $t);
+    }
+
+    public function getPrefetchCount(): int
+    {
+        return 1;
     }
 }
