@@ -5,6 +5,7 @@ namespace Test\helper;
 
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\QueueConsumer;
+use Emartech\TestHelper\BaseTestCase;
 use Exception;
 
 class SpyConsumer implements QueueConsumer
@@ -14,6 +15,19 @@ class SpyConsumer implements QueueConsumer
 
     /** @var bool */
     public $timeOutCalled = false;
+
+    /** @var BaseTestCase */
+    private $testCase;
+
+    /** @var int */
+    private $prefetchCount;
+
+
+    public function __construct(BaseTestCase $testCase, $prefetchCount = 2)
+    {
+        $this->testCase = $testCase;
+        $this->prefetchCount = $prefetchCount;
+    }
 
     /**
      * @throws Exception
@@ -30,6 +44,21 @@ class SpyConsumer implements QueueConsumer
 
     public function getPrefetchCount(): int
     {
-        return 2;
+        return $this->prefetchCount;
+    }
+
+    public function assertNoMessagesConsumed(): void
+    {
+        $this->assertConsumedMessagesCount(0);
+    }
+
+    public function assertConsumedMessagesCount(int $expectedCount): void
+    {
+        $this->testCase->assertCount($expectedCount, $this->consumedMessages);
+    }
+
+    public function assertConsumedMessage(int $index, array $expectedRawMessageContents): void
+    {
+        $this->testCase->assertEquals($expectedRawMessageContents, $this->consumedMessages[$index]->getContents());
     }
 }

@@ -5,7 +5,7 @@ namespace Emartech\AmqpWrapper;
 use Exception;
 use Throwable;
 
-class SimpleConsumer implements QueueConsumer
+class DumbConsumer implements QueueConsumer
 {
     private $delegate;
 

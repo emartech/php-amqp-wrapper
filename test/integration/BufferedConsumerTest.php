@@ -40,8 +40,8 @@ class BufferedConsumerTest extends BaseTestCase
             $this->queue->send(['number' => $i]);
         }
 
-        $this->spyInBufferedConsumer = new SpyConsumer();
-        $this->spyAfterBufferedConsumption = new SpyConsumer();
+        $this->spyInBufferedConsumer = new SpyConsumer($this);
+        $this->spyAfterBufferedConsumption = new SpyConsumer($this);
     }
 
     /**
@@ -54,7 +54,7 @@ class BufferedConsumerTest extends BaseTestCase
         $consumer = $this->createBufferedConsumer($bufferSize);
 
         $this->queue->consume($consumer);
-        $this->assertCount(11, $this->spyInBufferedConsumer->consumedMessages);
+        $this->spyInBufferedConsumer->assertConsumedMessagesCount(11);
     }
 
     private function createBufferedConsumer(int $bufferSize, QueueConsumer $delegate = null): BufferedConsumer

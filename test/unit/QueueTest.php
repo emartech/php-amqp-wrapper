@@ -11,40 +11,25 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
+use Test\helper\SpyConsumer;
 
-class QueueTest extends BaseTestCase implements QueueConsumer
+class QueueTest extends BaseTestCase
 {
     /** @var AbstractConnection */
     private $connection;
     /** @var Factory */
     private $factory;
-    /** @var Message[]|array */
-    private $consumed = [];
-    /** @var bool */
-    private $timeOutCalled;
+    /** @var SpyConsumer */
+    private $spy;
 
-    public function getPrefetchCount(): int
-    {
-        return 2;
-    }
-
-    public function consume(Message $message): void
-    {
-        $this->consumed[] = $message;
-    }
-
-    public function timeOut(): void
-    {
-        $this->timeOutCalled = true;
-    }
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->factory = new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), 1);
         $this->connection = $this->factory->createConnection($this->getRabbitUrlForTest());
+        $this->spy = new SpyConsumer($this);
         $this->purgeQueue();
-        $this->resetConsumer();
     }
 
     /**
@@ -75,10 +60,10 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $queue = $this->factory->createQueue($this->getQueueNameForTest());
 
         $queue->send($message);
-        $queue->consume($this);
+        $queue->consume($this->spy);
 
-        $this->assertCount(1, $this->consumed);
-        $this->assertEquals($message, $this->consumed[0]->getContents());
+        $this->assertCount(1, $this->spy->consumedMessages);
+        $this->assertEquals($message, $this->spy->consumedMessages[0]->getContents());
     }
 
     /**
@@ -114,11 +99,11 @@ class QueueTest extends BaseTestCase implements QueueConsumer
         $queue->send($message1);
         $queue->send($message2);
 
-        $queue->consume($this);
+        $queue->consume($this->spy);
 
-        $this->assertCount(2, $this->consumed);
-        $this->assertEquals($message1, $this->consumed[0]->getContents());
-        $this->assertEquals($message2, $this->consumed[1]->getContents());
+        $this->assertCount(2, $this->spy->consumedMessages);
+        $this->assertEquals($message1, $this->spy->consumedMessages[0]->getContents());
+        $this->assertEquals($message2, $this->spy->consumedMessages[1]->getContents());
     }
 
     private function purgeQueue(): void
@@ -153,12 +138,5 @@ class QueueTest extends BaseTestCase implements QueueConsumer
     private function getRabbitUrlForTest(): string
     {
         return getenv('RABBITMQ_URL');
-    }
-
-    protected function resetConsumer(): void
-    {
-        $this->consumed = [];
-        $this->failed = [];
-        $this->timeOutCalled = false;
     }
 }

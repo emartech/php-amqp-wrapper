@@ -16,18 +16,14 @@ class ChannelWrapperTest extends BaseTestCase
 
     /** @var string */
     private $queueName = 'test_queue';
-    /** @var Queue */
-    private $queue;
     /** @var SpyConsumer */
-    private $consumer;
+    private $spy;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->queueName = 'testing';
-        $this->queue = $this->openChannel();
-        $this->queue->purge();
-        $this->consumer = new SpyConsumer();
+        $this->spy = new SpyConsumer($this);
     }
 
     /**
@@ -38,12 +34,12 @@ class ChannelWrapperTest extends BaseTestCase
         $message1 = ['test1'];
         $message2 = ['test1'];
 
-        $this->queue->send($message1);
-        $this->queue->send($message2);
-        $this->queue->purge();
-        $this->queue->consume($this->consumer);
+        $this->newChannel()->send($message1);
+        $this->newChannel()->send($message2);
+        $this->newChannel()->purge();
+        $this->newChannel()->consume($this->spy);
 
-        $this->assertCount(0, $this->consumer->consumedMessages);
+        $this->spy->assertNoMessagesConsumed();
     }
 
     /**
@@ -53,11 +49,11 @@ class ChannelWrapperTest extends BaseTestCase
     {
         $message = ['test'];
 
-        $this->queue->send($message);
-        $this->queue->consume($this->consumer);
+        $this->newChannel()->send($message);
+        $this->newChannel()->consume($this->spy);
 
-        $this->assertCount(1, $this->consumer->consumedMessages);
-        $this->assertEquals($message, $this->consumer->consumedMessages[0]->getContents());
+        $this->spy->assertConsumedMessagesCount(1);
+        $this->spy->assertConsumedMessage(0, $message);
     }
 
     /**
@@ -69,18 +65,18 @@ class ChannelWrapperTest extends BaseTestCase
         $message2 = ['test2'];
         $message3 = ['test3'];
 
-        $this->queue->send($message1);
-        $this->queue->send($message2);
-        $this->queue->send($message3);
+        $this->newChannel()->send($message1);
+        $this->newChannel()->send($message2);
+        $this->newChannel()->send($message3);
 
-        $this->queue->consume($this->consumer);
+        $this->newChannel()->consume($this->spy);
 
-        $this->assertEquals($message1, $this->consumer->consumedMessages[0]->getContents());
-        $this->assertEquals($message2, $this->consumer->consumedMessages[1]->getContents());
+        $this->assertEquals($message1, $this->spy->consumedMessages[0]->getContents());
+        $this->assertEquals($message2, $this->spy->consumedMessages[1]->getContents());
 
-        $this->queue->consume($this->consumer);
+        $this->newChannel()->consume($this->spy);
 
-        $this->assertEquals($message3, $this->consumer->consumedMessages[2]->getContents());
+        $this->assertEquals($message3, $this->spy->consumedMessages[2]->getContents());
     }
 
     /**
@@ -91,13 +87,14 @@ class ChannelWrapperTest extends BaseTestCase
         $message1 = ['test1'];
         $message2 = ['test2'];
 
-        $this->queue->send($message1);
-        $this->queue->send($message2);
+        $this->newChannel()->send($message1);
+        $this->newChannel()->send($message2);
 
-        $this->queue->consume($this->consumer);
+        $this->newChannel()->consume($this->spy);
 
-        $this->assertEquals($message1, $this->consumer->consumedMessages[0]->getContents());
-        $this->assertEquals($message2, $this->consumer->consumedMessages[1]->getContents());
+        $this->spy->assertConsumedMessagesCount(2);
+        $this->spy->assertConsumedMessage(0, $message1);
+        $this->spy->assertConsumedMessage(1, $message2);
 
         $this->assertNumberOfMessagesLeftInQueue(0);
     }
@@ -107,9 +104,9 @@ class ChannelWrapperTest extends BaseTestCase
      */
     public function send_ErrorOccursDuringConsumption_ExceptionBubblesUpAndMessageLeftHanging(): void
     {
-        $this->queue->send(['test1']);
-        $this->queue->send(['test2']);
-        $this->queue->send(['test3']);
+        $this->newChannel()->send(['test1']);
+        $this->newChannel()->send(['test2']);
+        $this->newChannel()->send(['test3']);
 
         $mockConsumer = $this->createMock(QueueConsumer::class);
         $exception = new Exception();
@@ -118,7 +115,7 @@ class ChannelWrapperTest extends BaseTestCase
             ->willThrowException($exception);
 
         $this->assertExceptionThrown($this->identicalTo($exception), function () use ($mockConsumer) {
-            $this->queue->consume($mockConsumer);
+            $this->newChannel()->consume($mockConsumer);
         });
 
         $this->assertNumberOfMessagesLeftInQueue(2);
@@ -127,19 +124,19 @@ class ChannelWrapperTest extends BaseTestCase
     /**
      * @return Queue
      */
-    protected function openChannel(): Queue
+    protected function newChannel(): Queue
     {
         return (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))
             ->createQueue($this->queueName);
     }
 
     /**
-     * @param $count
+     * @param $expectedCount
      */
-    protected function assertNumberOfMessagesLeftInQueue(int $count): void
+    protected function assertNumberOfMessagesLeftInQueue(int $expectedCount): void
     {
-        $spy = new SpyConsumer();
-        $this->openChannel()->consume($spy);
-        $this->assertCount($count, $spy->consumedMessages);
+        $spy = new SpyConsumer($this);
+        $this->newChannel()->consume($spy);
+        $spy->assertConsumedMessagesCount($expectedCount);
     }
 }
