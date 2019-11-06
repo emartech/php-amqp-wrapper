@@ -31,13 +31,14 @@ class ChannelWrapperTest extends BaseTestCase
      */
     public function purge_MessagesInQueue_MessagesPurged(): void
     {
+        $this->newChannel(__FUNCTION__)->delete();
         $message1 = ['test1'];
-        $message2 = ['test1'];
+        $message2 = ['test2'];
 
-        $this->newChannel()->send($message1);
-        $this->newChannel()->send($message2);
-        $this->newChannel()->purge();
-        $this->newChannel()->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->send($message1);
+        $this->newChannel(__FUNCTION__)->send($message2);
+        $this->newChannel(__FUNCTION__)->purge();
+        $this->newChannel(__FUNCTION__)->consume($this->spy);
 
         $this->spy->assertNoMessagesConsumed();
     }
@@ -47,10 +48,11 @@ class ChannelWrapperTest extends BaseTestCase
      */
     public function send_MessageSent_MessageCanBeConsumed(): void
     {
+        $this->newChannel(__FUNCTION__)->delete();
         $message = ['test'];
 
-        $this->newChannel()->send($message);
-        $this->newChannel()->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->send($message);
+        $this->newChannel(__FUNCTION__)->consume($this->spy);
 
         $this->spy->assertConsumedMessagesCount(1);
         $this->spy->assertConsumedMessage(0, $message);
@@ -59,22 +61,42 @@ class ChannelWrapperTest extends BaseTestCase
     /**
      * @test
      */
+    public function send_TtlSetForQueue_AfterTtlPassesMessageIsAutomaticallyDiscarded(): void
+    {
+        $ttlMilliSeconds = 500;
+        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->delete();
+        $message = ['test'];
+
+        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->send($message);
+        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->consume($this->spy);
+        $this->spy->assertConsumedMessagesCount(1);
+        usleep(600);
+
+        $afterSpy = new SpyConsumer($this);
+        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->consume($afterSpy);
+        $afterSpy->assertNoMessagesConsumed();
+    }
+
+    /**
+     * @test
+     */
     public function send_NumberOfMessagesInQueueExceedsBatchSize_ProcessingOccursInMultipleRounds(): void
     {
+        $this->newChannel(__FUNCTION__)->delete();
         $message1 = ['test1'];
         $message2 = ['test2'];
         $message3 = ['test3'];
 
-        $this->newChannel()->send($message1);
-        $this->newChannel()->send($message2);
-        $this->newChannel()->send($message3);
+        $this->newChannel(__FUNCTION__)->send($message1);
+        $this->newChannel(__FUNCTION__)->send($message2);
+        $this->newChannel(__FUNCTION__)->send($message3);
 
-        $this->newChannel()->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spy);
 
         $this->assertEquals($message1, $this->spy->consumedMessages[0]->getContents());
         $this->assertEquals($message2, $this->spy->consumedMessages[1]->getContents());
 
-        $this->newChannel()->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spy);
 
         $this->assertEquals($message3, $this->spy->consumedMessages[2]->getContents());
     }
@@ -84,19 +106,20 @@ class ChannelWrapperTest extends BaseTestCase
      */
     public function send_MessagesNotAcknowledgedByConsumer_MessagesLeftHanging(): void
     {
+        $this->newChannel(__FUNCTION__)->delete();
         $message1 = ['test1'];
         $message2 = ['test2'];
 
-        $this->newChannel()->send($message1);
-        $this->newChannel()->send($message2);
+        $this->newChannel(__FUNCTION__)->send($message1);
+        $this->newChannel(__FUNCTION__)->send($message2);
 
-        $this->newChannel()->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spy);
 
         $this->spy->assertConsumedMessagesCount(2);
         $this->spy->assertConsumedMessage(0, $message1);
         $this->spy->assertConsumedMessage(1, $message2);
 
-        $this->assertNumberOfMessagesLeftInQueue(0);
+        $this->assertNumberOfMessagesLeftInQueue(0, __FUNCTION__);
     }
 
     /**
@@ -104,39 +127,34 @@ class ChannelWrapperTest extends BaseTestCase
      */
     public function send_ErrorOccursDuringConsumption_ExceptionBubblesUpAndMessageLeftHanging(): void
     {
-        $this->newChannel()->send(['test1']);
-        $this->newChannel()->send(['test2']);
-        $this->newChannel()->send(['test3']);
+        $queueName = __FUNCTION__;
+        $this->newChannel($queueName)->delete();
+        $this->newChannel($queueName)->send(['test1']);
+        $this->newChannel($queueName)->send(['test2']);
+        $this->newChannel($queueName)->send(['test3']);
 
         $mockConsumer = $this->createMock(QueueConsumer::class);
         $exception = new Exception();
         $mockConsumer->expects($this->any())->method('getPrefetchCount')->willReturn(1);
-        $mockConsumer->expects($this->once())->method('consume')
-            ->willThrowException($exception);
+        $mockConsumer->expects($this->once())->method('consume')->willThrowException($exception);
 
-        $this->assertExceptionThrown($this->identicalTo($exception), function () use ($mockConsumer) {
-            $this->newChannel()->consume($mockConsumer);
+        $this->assertExceptionThrown($this->identicalTo($exception), function () use ($mockConsumer, $queueName) {
+            $this->newChannel($queueName)->consume($mockConsumer);
         });
 
-        $this->assertNumberOfMessagesLeftInQueue(2);
+        $this->assertNumberOfMessagesLeftInQueue(2, $queueName);
     }
 
-    /**
-     * @return Queue
-     */
-    protected function newChannel(): Queue
+    private function newChannel(string $queueName = null, int $ttlMilliSeconds = null): Queue
     {
         return (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))
-            ->createQueue($this->queueName);
+            ->createQueue($queueName ?: $this->queueName, $ttlMilliSeconds);
     }
 
-    /**
-     * @param $expectedCount
-     */
-    protected function assertNumberOfMessagesLeftInQueue(int $expectedCount): void
+    private function assertNumberOfMessagesLeftInQueue(int $expectedCount, string $queueName): void
     {
-        $spy = new SpyConsumer($this);
-        $this->newChannel()->consume($spy);
-        $spy->assertConsumedMessagesCount($expectedCount);
+        $afterSpy = new SpyConsumer($this);
+        $this->newChannel($queueName)->consume($afterSpy);
+        $afterSpy->assertConsumedMessagesCount($expectedCount);
     }
 }

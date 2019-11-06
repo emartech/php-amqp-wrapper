@@ -7,6 +7,7 @@ use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPSSLConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
+use PhpAmqpLib\Wire\AMQPTable;
 use Psr\Log\LoggerInterface;
 
 class Factory
@@ -27,19 +28,26 @@ class Factory
         $this->waitTimeout = $waitTimeout;
     }
 
-    public function createQueue(string $queueName): Queue
+    public function createQueue(string $queueName, int $ttlMilliSeconds = null): Queue
     {
         return new ChannelWrapper(
-            $this->openChannel($queueName, $this->connectionUrl), $this->logger, $queueName, $this->waitTimeout
+            $this->openChannel($queueName, $this->connectionUrl, $ttlMilliSeconds),
+            $this->logger,
+            $queueName,
+            $this->waitTimeout
         );
     }
 
-    public function openChannel(string $queueName, string $connectionUrl): AMQPChannel
+    public function openChannel(string $queueName, string $connectionUrl, int $ttlMilliSeconds = null): AMQPChannel
     {
         $this->logger->debug('Connecting to AMQP', ['queue' => $queueName]);
 
         $channel = $this->createConnection($connectionUrl)->channel();
-        $channel->queue_declare($queueName, false, true, false, false);
+        $queueArguments = [];
+        if (null !== $ttlMilliSeconds) {
+            $queueArguments['x-message-ttl'] = $ttlMilliSeconds;
+        }
+        $channel->queue_declare($queueName, false, true, false, false, false, new AMQPTable($queueArguments));
         $channel->exchange_declare(self::EXCHANGE_DIRECT, 'direct', true, true, false);
         $channel->queue_bind($queueName, self::EXCHANGE_DIRECT);
 

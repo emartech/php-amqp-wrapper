@@ -19,4 +19,9 @@ interface Queue
      * Remove all messages from the queue
      */
     public function purge(): void;
+
+    /**
+     * Delete the queue
+     */
+    public function delete(): void;
 }

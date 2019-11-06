@@ -34,6 +34,11 @@ class ChannelWrapper implements Queue
         $this->channel->queue_purge($this->queueName);
     }
 
+    public function delete(): void
+    {
+        $this->channel->queue_delete($this->queueName);
+    }
+
     /**
      * @throws ErrorException
      */
