@@ -6,7 +6,7 @@ use Exception;
 
 interface QueueConsumer
 {
-    public function getPrefetchCount(): int;
+    public function getPrefetchCount(): ?int;
 
     /**
      * Process the message

@@ -40,7 +40,10 @@ class ChannelWrapper implements Queue
     public function consume(QueueConsumer $consumer): void
     {
         $consumerTag = 'consumer' . getmypid();
-        $this->channel->basic_qos(0, $consumer->getPrefetchCount(), false);
+        $prefetchCount = $consumer->getPrefetchCount();
+        if (null !== $prefetchCount) {
+            $this->channel->basic_qos(0, $prefetchCount, false);
+        }
         $this->channel->basic_consume($this->queueName, $consumerTag, false, false, false, false, function (AMQPMessage $amqpMessage) use ($consumer) {
             $this->logDebug('consume_prepare', $amqpMessage->getBody(), 'Consuming message');
             $consumer->consume($this->wrapAmqpMessage($amqpMessage));
