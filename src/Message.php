@@ -31,9 +31,14 @@ class Message
         return $this->message->getBody();
     }
 
-    public function requeue()
+    public function reject(): void
     {
-        $this->channel->requeue($this->message);
+        $this->channel->reject($this->message);
+    }
+
+    public function discard(): void
+    {
+        $this->channel->discard($this->message);
     }
 
     public function publish(): void

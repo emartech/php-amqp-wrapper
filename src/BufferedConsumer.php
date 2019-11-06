@@ -75,7 +75,7 @@ class BufferedConsumer implements QueueConsumer
         } catch (Throwable $t) {
             $this->logConsumeFailure($t);
             foreach ($messages as $message) {
-                $message->requeue();
+                $message->reject();
             }
         }
         $this->buffer->flush();
