@@ -100,7 +100,7 @@ class ChannelWrapper implements Queue
             json_encode($contents),
             [
                 'content_type' => 'text/plain',
-                'delivery_mode' => 2,
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
             ]
         );
     }
