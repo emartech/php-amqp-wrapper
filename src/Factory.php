@@ -48,7 +48,7 @@ class Factory
         }
         $channel->queue_declare($queueName, false, true, false, false, false, new AMQPTable($queueArguments));
 
-        $this->logger->debug('Successfully connected to AMQP', ['queue' => $queueName]);
+        $this->logger->debug('Successfully connected to AMQP', ['queue' => $queueName, 'channelId' => $channel->getChannelId()]);
 
         return $channel;
     }
