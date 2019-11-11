@@ -26,8 +26,7 @@ class ChannelWrapper implements Queue
 
     public function __destruct()
     {
-        $this->channel->close();
-        $this->logger->debug('AMQP channel closed', ['channelId' => $this->channel->getChannelId()]);
+        $this->closeChannel();
     }
 
     public function send(array $contents): void
@@ -118,6 +117,12 @@ class ChannelWrapper implements Queue
             'event' => $event,
             'raw_message' => $rawMessage,
         ]);
+    }
+
+    private function closeChannel(): void
+    {
+        $this->channel->close();
+        $this->logger->debug('AMQP channel closed', ['channelId' => $this->channel->getChannelId()]);
     }
 
 }
