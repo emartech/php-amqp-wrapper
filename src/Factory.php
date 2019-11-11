@@ -48,7 +48,7 @@ class Factory
             $queueArguments['x-message-ttl'] = $ttlMilliSeconds;
         }
         $channel->queue_declare($queueName, false, true, false, false, false, new AMQPTable($queueArguments));
-        $channel->exchange_declare(self::EXCHANGE_DIRECT, 'direct', true, true, false);
+        $channel->exchange_declare($queueName, 'direct', true, true, false);
         $channel->queue_bind($queueName, self::EXCHANGE_DIRECT);
 
         $this->logger->debug('Successfully connected to AMQP', ['queue' => $queueName]);
