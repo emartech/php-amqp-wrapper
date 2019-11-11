@@ -85,7 +85,7 @@ class ChannelWrapper implements Queue
 
     public function publish(AMQPMessage $message)
     {
-        $this->channel->basic_publish($message, 'amq.direct');
+        $this->channel->basic_publish($message, '', $this->queueName);
         $this->logDebug('message_sent', $message->getBody(), 'AMQP message sent');
     }
 
