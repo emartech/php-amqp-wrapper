@@ -12,7 +12,6 @@ use Psr\Log\LoggerInterface;
 
 class Factory
 {
-    private const EXCHANGE_DIRECT = 'amq.direct';
     private const SCHEME_AMQP = 'amqp';
     private const SCHEME_AMQPS = 'amqps';
 
