@@ -76,9 +76,9 @@ class ChannelWrapper implements Queue
         $this->logDebug('message_ack', $message->getBody(), 'ACK-ing message');
     }
 
-    public function reject(AMQPMessage $message): void
+    public function reject(AMQPMessage $message, bool $requeue = true): void
     {
-        $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+        $this->channel->basic_reject($message->delivery_info['delivery_tag'], $requeue);
         $this->logDebug('message_rejected', $message->getBody(), 'Rejecting message');
     }
 
