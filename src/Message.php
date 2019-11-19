@@ -31,9 +31,9 @@ class Message
         return $this->message->getBody();
     }
 
-    public function reject(bool $requeue = true): void
+    public function reject(): void
     {
-        $this->channel->reject($this->message, $requeue);
+        $this->channel->reject($this->message);
     }
 
     public function discard(): void
