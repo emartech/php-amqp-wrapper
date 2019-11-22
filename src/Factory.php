@@ -18,6 +18,7 @@ class Factory
     private $logger;
     private $connectionUrl;
     private $waitTimeout;
+    private $connections = [];
 
 
     public function __construct(LoggerInterface $logger, string $connectionUrl, int $waitTimeout)
@@ -29,12 +30,16 @@ class Factory
 
     public function createQueue(string $queueName, int $ttlMilliSeconds = null): Queue
     {
-        return new ChannelWrapper(
-            $this->openChannel($queueName, $this->connectionUrl, $ttlMilliSeconds),
-            $this->logger,
-            $queueName,
-            $this->waitTimeout
-        );
+        if (!isset($this->connections[$queueName])) {
+            $this->connections[$queueName] = new ChannelWrapper(
+                $this->openChannel($queueName, $this->connectionUrl, $ttlMilliSeconds),
+                $this->logger,
+                $queueName,
+                $this->waitTimeout
+            );
+        }
+
+        return $this->connections[$queueName];
     }
 
     public function openChannel(string $queueName, string $connectionUrl, int $ttlMilliSeconds = null): AMQPChannel
