@@ -24,11 +24,6 @@ class ChannelWrapper implements Queue
         $this->timeOut = $timeOut;
     }
 
-    public function __destruct()
-    {
-        $this->closeChannel();
-    }
-
     public function send(array $contents): void
     {
         $this->wrapAmqpMessage($this->createAmqpMessage($contents))->publish();
@@ -118,11 +113,4 @@ class ChannelWrapper implements Queue
             'raw_message' => $rawMessage,
         ]);
     }
-
-    private function closeChannel(): void
-    {
-        $this->channel->close();
-        $this->logger->debug('AMQP channel closed', ['channelId' => $this->channel->getChannelId()]);
-    }
-
 }

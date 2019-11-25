@@ -147,16 +147,6 @@ class ChannelWrapperTest extends BaseTestCase
         $this->assertNumberOfMessagesLeftInQueue(2, $queueName);
     }
 
-    /**
-     * @test
-     */
-    public function destruct_ChannelDestroyed_ChannelClosed()
-    {
-        $channel = $this->createMock(AMQPChannel::class);
-        $channel->expects($this->once())->method('close');
-        new ChannelWrapper($channel, $this->dummyLogger, 'irrelevant', 1);
-    }
-
     private function newChannel(string $queueName = null, int $ttlMilliSeconds = null): Queue
     {
         return (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))
