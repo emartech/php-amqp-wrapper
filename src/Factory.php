@@ -78,8 +78,7 @@ class Factory
      */
     private function createUnencryptedConnection(array $url): AMQPStreamConnection
     {
-        $connection = new AMQPStreamConnection($url['host'], $url['port'], $url['user'], $url['pass'], substr($url['path'], 1), false, 'AMQPLAIN', null, 'en_US', 300, 300, null, true, 15, 0.0, null);
-
+        $connection = new AMQPStreamConnection($url['host'], $url['port'], $url['user'], $url['pass'], substr($url['path'], 1));
         $this->logConnectionSuccess($connection);
         return $connection;
     }
