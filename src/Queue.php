@@ -24,4 +24,6 @@ interface Queue
      * Delete the queue
      */
     public function delete(): void;
+
+    public function isConnected(): bool;
 }

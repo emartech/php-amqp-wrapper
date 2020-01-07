@@ -18,6 +18,7 @@ class Factory
     private $logger;
     private $connectionUrl;
     private $waitTimeout;
+    /** @var Queue[] */
     private $connections = [];
 
 
@@ -30,7 +31,7 @@ class Factory
 
     public function createQueue(string $queueName, int $ttlMilliSeconds = null): Queue
     {
-        if (!isset($this->connections[$queueName])) {
+        if (!isset($this->connections[$queueName]) || !$this->connections[$queueName]->isConnected()) {
             $this->connections[$queueName] = new ChannelWrapper(
                 $this->openChannel($queueName, $this->connectionUrl, $ttlMilliSeconds),
                 $this->logger,

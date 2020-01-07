@@ -24,6 +24,11 @@ class ChannelWrapper implements Queue
         $this->timeOut = $timeOut;
     }
 
+    public function isConnected(): bool
+    {
+        return $this->channel->getConnection()->isConnected() && $this->channel->is_open();
+    }
+
     public function send(array $contents): void
     {
         $this->wrapAmqpMessage($this->createAmqpMessage($contents))->publish();
