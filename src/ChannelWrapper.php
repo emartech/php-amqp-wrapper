@@ -24,9 +24,9 @@ class ChannelWrapper implements Queue
         $this->timeOut = $timeOut;
     }
 
-    public function isConnected(): bool
+    public function close(): void
     {
-        return $this->channel->getConnection()->isConnected() && $this->channel->is_open();
+        $this->channel->getConnection()->close();
     }
 
     public function send(array $contents): void

@@ -29,9 +29,15 @@ class Factory
         $this->waitTimeout = $waitTimeout;
     }
 
+    public function closeQueue(string $queueName)
+    {
+        $this->connections[$queueName]->close();
+        unset($this->connections[$queueName]);
+    }
+
     public function createQueue(string $queueName, int $ttlMilliSeconds = null): Queue
     {
-        if (!isset($this->connections[$queueName]) || !$this->connections[$queueName]->isConnected()) {
+        if (!isset($this->connections[$queueName])) {
             $this->connections[$queueName] = new ChannelWrapper(
                 $this->openChannel($queueName, $this->connectionUrl, $ttlMilliSeconds),
                 $this->logger,
