@@ -18,6 +18,11 @@
     "emartech/php-test-helpers": "*",
     "fqqdk/packagist-publisher": "*"
   },
+  "config": {
+    "allow-plugins": {
+      "fqqdk/packagist-publisher": true
+    }
+  },
   "autoload": {
     "psr-4": {
       "Emartech\\AmqpWrapper\\": "src/",
