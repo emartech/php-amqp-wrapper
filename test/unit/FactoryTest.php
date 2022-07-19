@@ -1,11 +1,12 @@
 <?php
 
 use Emartech\AmqpWrapper\Factory;
-use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
-class FactoryTest extends BaseTestCase
+class FactoryTest extends TestCase
 {
     /** @var Factory */
     private $factory;
@@ -13,7 +14,7 @@ class FactoryTest extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->factory = (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), 1));
+        $this->factory = (new Factory($this->createMock(LoggerInterface::class), getenv('RABBITMQ_URL'), 1));
     }
 
     /**
@@ -29,9 +30,8 @@ class FactoryTest extends BaseTestCase
      */
     public function createConnection_BadUrlScheme_ThrowsException()
     {
-        $this->assertExceptionThrown(AMQPRuntimeException::class, function () {
-            $this->factory->createConnection('invalid://url');
-        });
+        $this->expectException(AMQPRuntimeException::class);
+        $this->factory->createConnection('invalid://url');
     }
 
     /**

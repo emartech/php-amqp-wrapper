@@ -5,8 +5,8 @@ namespace Test\helper;
 
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\QueueConsumer;
-use Emartech\TestHelper\BaseTestCase;
 use Exception;
+use PHPUnit\Framework\TestCase;
 
 class SpyConsumer implements QueueConsumer
 {
@@ -16,14 +16,13 @@ class SpyConsumer implements QueueConsumer
     /** @var bool */
     public $timeOutCalled = false;
 
-    /** @var BaseTestCase */
-    private $testCase;
+    private TestCase $testCase;
 
     /** @var int */
     private $prefetchCount;
 
 
-    public function __construct(BaseTestCase $testCase, $prefetchCount = 2)
+    public function __construct(TestCase $testCase, $prefetchCount = 2)
     {
         $this->testCase = $testCase;
         $this->prefetchCount = $prefetchCount;

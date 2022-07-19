@@ -6,14 +6,15 @@ use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\QueueConsumer;
-use Emartech\TestHelper\BaseTestCase;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Test\helper\SpyConsumer;
 
-class QueueTest extends BaseTestCase
+class QueueTest extends TestCase
 {
     /** @var AbstractConnection */
     private $connection;
@@ -21,12 +22,13 @@ class QueueTest extends BaseTestCase
     private $factory;
     /** @var SpyConsumer */
     private $spy;
-
+    private LoggerInterface $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->factory = new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), 1);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->factory = new Factory($this->logger, getenv('RABBITMQ_URL'), 1);
         $this->connection = $this->factory->createConnection($this->getRabbitUrlForTest());
         $this->spy = new SpyConsumer($this);
         $this->purgeQueue();
@@ -77,13 +79,13 @@ class QueueTest extends BaseTestCase
         $channel->expects($this->exactly(2))->method('basic_ack');
 
         $batchSize = 1;
-        $channelWrapper = new ChannelWrapper($channel, $this->dummyLogger, $this->getQueueNameForTest(), 1);
+        $channelWrapper = new ChannelWrapper($channel, $this->logger, $this->getQueueNameForTest(), 1);
         $messageBuffer = new MessageBuffer($batchSize);
         $messageBuffer
             ->addMessage(new Message($channelWrapper, $this->mockRawMessage(['test1'])))
             ->addMessage(new Message($channelWrapper, $this->mockRawMessage(['test2'])));
 
-        $channelWrapper->consume(new BufferedConsumer($messageBuffer, $this->createMock(QueueConsumer::class), $this->dummyLogger, $this->getQueueNameForTest()));
+        $channelWrapper->consume(new BufferedConsumer($messageBuffer, $this->createMock(QueueConsumer::class), $this->logger, $this->getQueueNameForTest()));
     }
 
     /**

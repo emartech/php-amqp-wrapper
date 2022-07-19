@@ -8,15 +8,14 @@
   "prefer-stable" : true,
   "require": {
     "php": "^8.0",
-    "ext-json": "*",
-    "php-amqplib/php-amqplib": "*",
-    "psr/log": "*"
+    "php-amqplib/php-amqplib": "^3.0",
+    "psr/log": "^3.0",
+    "ext-json": "*"
   },
   "require-dev": {
-    "phpunit/phpunit": "*",
-    "phpunit/php-invoker": "*",
-    "emartech/php-test-helpers": "*",
-    "fqqdk/packagist-publisher": "*"
+    "phpunit/phpunit": "^8.0",
+    "phpunit/php-invoker": "^3.0",
+    "fqqdk/packagist-publisher": "^1.0"
   },
   "config": {
     "allow-plugins": {

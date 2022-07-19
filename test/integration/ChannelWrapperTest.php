@@ -7,12 +7,13 @@ use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\QueueConsumer;
-use Emartech\TestHelper\BaseTestCase;
 use Exception;
 use PhpAmqpLib\Channel\AMQPChannel;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Test\helper\SpyConsumer;
 
-class ChannelWrapperTest extends BaseTestCase
+class ChannelWrapperTest extends TestCase
 {
     private const QUEUE_WAIT_TIMEOUT_SECONDS = 1;
 
@@ -136,20 +137,21 @@ class ChannelWrapperTest extends BaseTestCase
         $this->newChannel($queueName)->send(['test3']);
 
         $mockConsumer = $this->createMock(QueueConsumer::class);
-        $exception = new Exception();
+        $expectedException = new Exception('Some exception happened');
         $mockConsumer->expects($this->any())->method('getPrefetchCount')->willReturn(1);
-        $mockConsumer->expects($this->once())->method('consume')->willThrowException($exception);
+        $mockConsumer->expects($this->once())->method('consume')->willThrowException($expectedException);
 
-        $this->assertExceptionThrown($this->identicalTo($exception), function () use ($mockConsumer, $queueName) {
-            $this->newChannel($queueName)->consume($mockConsumer);
-        });
+        $this->expectException(get_class($expectedException));
+        $this->expectExceptionMessage($expectedException->getMessage());
+
+        $this->newChannel($queueName)->consume($mockConsumer);
 
         $this->assertNumberOfMessagesLeftInQueue(2, $queueName);
     }
 
     private function newChannel(string $queueName = null, int $ttlMilliSeconds = null): Queue
     {
-        return (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))
+        return (new Factory($this->createMock(LoggerInterface::class), getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))
             ->createQueue($queueName ?: $this->queueName, $ttlMilliSeconds);
     }
 

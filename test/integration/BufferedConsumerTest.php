@@ -8,11 +8,12 @@ use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\QueueConsumer;
-use Emartech\TestHelper\BaseTestCase;
 use ErrorException;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Test\helper\SpyConsumer;
 
-class BufferedConsumerTest extends BaseTestCase
+class BufferedConsumerTest extends TestCase
 {
     private const QUEUE_WAIT_TIMEOUT_SECONDS = 1;
     private const BATCH_SIZE = 2;
@@ -62,13 +63,13 @@ class BufferedConsumerTest extends BaseTestCase
         return new BufferedConsumer(
             new MessageBuffer($bufferSize),
             $delegate ?: $this->spyInBufferedConsumer,
-            $this->dummyLogger,
+            $this->createMock(LoggerInterface::class),
             $this->queueName
         );
     }
 
     protected function openQueue(): Queue
     {
-        return (new Factory($this->dummyLogger, getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))->createQueue($this->queueName);
+        return (new Factory($this->createMock(LoggerInterface::class), getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))->createQueue($this->queueName);
     }
 }
