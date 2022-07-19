@@ -2,7 +2,6 @@
 
 namespace Emartech\AmqpWrapper;
 
-use ErrorException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -10,10 +9,10 @@ use Psr\Log\LoggerInterface;
 
 class ChannelWrapper implements Queue
 {
-    private $channel;
-    private $logger;
-    private $queueName;
-    private $timeOut;
+    private AMQPChannel $channel;
+    private LoggerInterface $logger;
+    private string $queueName;
+    private int $timeOut;
 
 
     public function __construct(AMQPChannel $channel, LoggerInterface $logger, string $queueName, int $timeOut)
@@ -29,9 +28,9 @@ class ChannelWrapper implements Queue
         $this->channel->getConnection()->close();
     }
 
-    public function send(array $contents): void
+    public function send(array $messageBody): void
     {
-        $this->wrapAmqpMessage($this->createAmqpMessage($contents))->publish();
+        $this->wrapAmqpMessage($this->createAmqpMessage($messageBody))->publish();
     }
 
     public function purge(): void
@@ -44,9 +43,6 @@ class ChannelWrapper implements Queue
         $this->channel->queue_delete($this->queueName);
     }
 
-    /**
-     * @throws ErrorException
-     */
     public function consume(QueueConsumer $consumer): void
     {
         $consumerTag = 'consumer' . getmypid();
@@ -63,7 +59,7 @@ class ChannelWrapper implements Queue
             do {
                 $this->channel->wait(null, false, $this->timeOut);
             } while ($this->channel->is_consuming());
-        } catch (AMQPTimeoutException $e) {
+        } catch (AMQPTimeoutException $ex) {
             $consumer->timeOut();
         }
 
@@ -72,19 +68,19 @@ class ChannelWrapper implements Queue
 
     public function ack(AMQPMessage $message): void
     {
-        $this->channel->basic_ack($message->delivery_info['delivery_tag']);
+        $this->channel->basic_ack($message->getDeliveryTag());
         $this->logDebug('message_ack', $message->getBody(), 'ACK-ing message');
     }
 
     public function reject(AMQPMessage $message): void
     {
-        $this->channel->basic_reject($message->delivery_info['delivery_tag'], true);
+        $this->channel->basic_reject($message->getDeliveryTag(), true);
         $this->logDebug('message_rejected', $message->getBody(), 'Rejecting message');
     }
 
     public function discard(AMQPMessage $message): void
     {
-        $this->channel->basic_reject($message->delivery_info['delivery_tag'], false);
+        $this->channel->basic_reject($message->getDeliveryTag(), false);
         $this->logDebug('message_discarded', $message->getBody(), 'Discarding message');
     }
 

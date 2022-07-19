@@ -1,5 +1,7 @@
 <?php
 
+namespace Test\Unit;
+
 use Emartech\AmqpWrapper\BufferedConsumer;
 use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Factory;
@@ -12,16 +14,13 @@ use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Test\helper\SpyConsumer;
+use Test\Helper\SpyConsumer;
 
 class QueueTest extends TestCase
 {
-    /** @var AbstractConnection */
-    private $connection;
-    /** @var Factory */
-    private $factory;
-    /** @var SpyConsumer */
-    private $spy;
+    private AbstractConnection $connection;
+    private Factory $factory;
+    private SpyConsumer $spyConsumer;
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -30,13 +29,10 @@ class QueueTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->factory = new Factory($this->logger, getenv('RABBITMQ_URL'), 1);
         $this->connection = $this->factory->createConnection($this->getRabbitUrlForTest());
-        $this->spy = new SpyConsumer($this);
+        $this->spyConsumer = new SpyConsumer($this);
         $this->purgeQueue();
     }
 
-    /**
-     * @throws Exception
-     */
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -49,7 +45,7 @@ class QueueTest extends TestCase
     public function send_MessageSent_MessageIsInQueue()
     {
         $this->factory->createQueue($this->getQueueNameForTest())->send(['test']);
-        $this->assertQueueCount(1);
+        $this->assertQueueCount();
     }
 
     /**
@@ -62,15 +58,14 @@ class QueueTest extends TestCase
         $queue = $this->factory->createQueue($this->getQueueNameForTest());
 
         $queue->send($message);
-        $queue->consume($this->spy);
+        $queue->consume($this->spyConsumer);
 
-        $this->assertCount(1, $this->spy->consumedMessages);
-        $this->assertEquals($message, $this->spy->consumedMessages[0]->getContents());
+        $this->assertCount(1, $this->spyConsumer->consumedMessages);
+        $this->assertEquals($message, $this->spyConsumer->consumedMessages[0]->getContents());
     }
 
     /**
      * @test
-     * @throws ErrorException
      */
     public function consume_MessagesProcessed_MessagesAcknowledged()
     {
@@ -101,32 +96,37 @@ class QueueTest extends TestCase
         $queue->send($message1);
         $queue->send($message2);
 
-        $queue->consume($this->spy);
+        $queue->consume($this->spyConsumer);
 
-        $this->assertCount(2, $this->spy->consumedMessages);
-        $this->assertEquals($message1, $this->spy->consumedMessages[0]->getContents());
-        $this->assertEquals($message2, $this->spy->consumedMessages[1]->getContents());
+        $this->assertCount(2, $this->spyConsumer->consumedMessages);
+        $this->assertEquals($message1, $this->spyConsumer->consumedMessages[0]->getContents());
+        $this->assertEquals($message2, $this->spyConsumer->consumedMessages[1]->getContents());
     }
 
     private function purgeQueue(): void
     {
-        $this->factory->openChannel($this->getQueueNameForTest(), $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest());
-        $this->factory->openChannel($this->getQueueNameForTest().'.error', $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest().'.error');
+        $this->factory->openChannel(
+            $this->getQueueNameForTest(),
+            $this->getRabbitUrlForTest())->queue_purge($this->getQueueNameForTest()
+        );
+        $this->factory
+            ->openChannel($this->getQueueNameForTest().'.error', $this->getRabbitUrlForTest())
+            ->queue_purge($this->getQueueNameForTest().'.error');
     }
 
-    private function assertQueueCount(int $expected): void
+    private function assertQueueCount(): void
     {
         $queueName = $this->getQueueNameForTest();
         $result = $this->factory->openChannel($queueName, $this->getRabbitUrlForTest())
             ->queue_declare($queueName, false, true, false, false);
-        $this->assertEquals($expected, $result[1], 'message count mismatch');
+        $this->assertEquals(1, $result[1], 'message count mismatch');
     }
 
     private function mockRawMessage(array $message): AMQPMessage
     {
         $rawMessage = $this->createMock(AMQPMessage::class);
         $rawMessage->body = json_encode($message);
-        $rawMessage->delivery_info['delivery_tag'] = '';
+        $rawMessage->setDeliveryInfo($rawMessage->getDeliveryTag(), false, '', '');
         $rawMessage->expects($this->any())->method('getBody')->willReturn($rawMessage->body);
 
         return $rawMessage;

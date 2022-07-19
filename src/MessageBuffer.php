@@ -4,12 +4,9 @@ namespace Emartech\AmqpWrapper;
 
 class MessageBuffer
 {
-    /** @var int */
-    private $batchSize;
-
     /** @var Message[] */
-    private $messages = [];
-
+    private array $messages = [];
+    private int $batchSize;
 
     public function __construct(int $batchSize)
     {

@@ -15,11 +15,11 @@ class Factory
     private const SCHEME_AMQP = 'amqp';
     private const SCHEME_AMQPS = 'amqps';
 
-    private $logger;
-    private $connectionUrl;
-    private $waitTimeout;
+    private LoggerInterface $logger;
+    private string $connectionUrl;
+    private int $waitTimeout;
     /** @var Queue[] */
-    private $connections = [];
+    private array $connections = [];
 
 
     public function __construct(LoggerInterface $logger, string $connectionUrl, int $waitTimeout)
@@ -80,19 +80,19 @@ class Factory
         }
     }
 
-    /**
-     * @return AMQPStreamConnection
-     */
     private function createUnencryptedConnection(array $url): AMQPStreamConnection
     {
-        $connection = new AMQPStreamConnection($url['host'], $url['port'], $url['user'], $url['pass'], substr($url['path'], 1));
+        $connection = new AMQPStreamConnection(
+            $url['host'],
+            $url['port'],
+            $url['user'],
+            $url['pass'],
+            substr($url['path'], 1)
+        );
         $this->logConnectionSuccess($connection);
         return $connection;
     }
 
-    /**
-     * @return AMQPSSLConnection
-     */
     private function createSSLConnection($url): AMQPSSLConnection
     {
         $sslOptions = [

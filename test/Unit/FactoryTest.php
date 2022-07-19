@@ -1,5 +1,7 @@
 <?php
 
+namespace Test\Unit;
+
 use Emartech\AmqpWrapper\Factory;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
@@ -9,12 +11,16 @@ use Psr\Log\LoggerInterface;
 class FactoryTest extends TestCase
 {
     /** @var Factory */
-    private $factory;
+    private Factory $factory;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->factory = (new Factory($this->createMock(LoggerInterface::class), getenv('RABBITMQ_URL'), 1));
+        $this->factory = new Factory(
+            $this->createMock(LoggerInterface::class),
+            getenv('RABBITMQ_URL'),
+            1
+        );
     }
 
     /**
@@ -22,7 +28,10 @@ class FactoryTest extends TestCase
      */
     public function createConnection_ConnectionIsNotSecure_ProperConnectionObjectReturned()
     {
-        $this->assertInstanceOf(AMQPStreamConnection::class, $this->factory->createConnection($this->getRabbitUrlForTest()));
+        $this->assertInstanceOf(
+            AMQPStreamConnection::class,
+            $this->factory->createConnection($this->getRabbitUrlForTest())
+        );
     }
 
     /**
@@ -34,10 +43,7 @@ class FactoryTest extends TestCase
         $this->factory->createConnection('invalid://url');
     }
 
-    /**
-     * @return array|false|string
-     */
-    private function getRabbitUrlForTest()
+    private function getRabbitUrlForTest(): bool|array|string
     {
         return getenv('RABBITMQ_URL');
     }

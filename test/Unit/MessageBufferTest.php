@@ -1,5 +1,7 @@
 <?php
 
+namespace Test\Unit;
+
 use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\MessageBuffer;
@@ -19,7 +21,12 @@ class MessageBufferTest extends TestCase
 
         /** @var AMQPChannel $channel */
         $channel = $this->createMock(AMQPChannel::class);
-        $channelWrapper = new ChannelWrapper($channel, $this->createMock(LoggerInterface::class), 'queue_name', 1);
+        $channelWrapper = new ChannelWrapper(
+            $channel,
+            $this->createMock(LoggerInterface::class),
+            'queue_name',
+            1
+        );
         $buffer = new MessageBuffer($batchSize);
 
         $message1 = $this->createMock(AMQPMessage::class);

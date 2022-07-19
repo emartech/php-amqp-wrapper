@@ -1,35 +1,24 @@
 <?php
 
-namespace Test\integration;
+namespace Test\Integration;
 
 use Emartech\AmqpWrapper\BufferedConsumer;
-use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\MessageBuffer;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\QueueConsumer;
-use ErrorException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Test\helper\SpyConsumer;
+use Test\Helper\SpyConsumer;
 
 class BufferedConsumerTest extends TestCase
 {
     private const QUEUE_WAIT_TIMEOUT_SECONDS = 1;
     private const BATCH_SIZE = 2;
 
-    /** @var string */
-    private $queueName;
-
-    /** @var ChannelWrapper */
-    private $queue;
-
-    /** @var SpyConsumer */
-    private $spyInBufferedConsumer;
-
-    /** @var SpyConsumer */
-    private $spyAfterBufferedConsumption;
-
+    private string $queueName;
+    private Queue $queue;
+    private SpyConsumer $spyInBufferedConsumer;
 
     protected function setUp(): void
     {
@@ -42,12 +31,10 @@ class BufferedConsumerTest extends TestCase
         }
 
         $this->spyInBufferedConsumer = new SpyConsumer($this);
-        $this->spyAfterBufferedConsumption = new SpyConsumer($this);
     }
 
     /**
      * @test
-     * @throws ErrorException
      */
     public function consume_MessageBufferSizeEqualToPrefetchNumber_AllMessagesConsumedInOneGo()
     {
@@ -58,11 +45,11 @@ class BufferedConsumerTest extends TestCase
         $this->spyInBufferedConsumer->assertConsumedMessagesCount(11);
     }
 
-    private function createBufferedConsumer(int $bufferSize, QueueConsumer $delegate = null): BufferedConsumer
+    private function createBufferedConsumer(int $bufferSize): BufferedConsumer
     {
         return new BufferedConsumer(
             new MessageBuffer($bufferSize),
-            $delegate ?: $this->spyInBufferedConsumer,
+            $this->spyInBufferedConsumer,
             $this->createMock(LoggerInterface::class),
             $this->queueName
         );
@@ -70,6 +57,12 @@ class BufferedConsumerTest extends TestCase
 
     protected function openQueue(): Queue
     {
-        return (new Factory($this->createMock(LoggerInterface::class), getenv('RABBITMQ_URL'), self::QUEUE_WAIT_TIMEOUT_SECONDS))->createQueue($this->queueName);
+        $factory = new Factory(
+            $this->createMock(LoggerInterface::class),
+            getenv('RABBITMQ_URL'),
+            self::QUEUE_WAIT_TIMEOUT_SECONDS
+        );
+
+        return $factory->createQueue($this->queueName);
     }
 }

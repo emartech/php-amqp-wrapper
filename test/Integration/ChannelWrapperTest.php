@@ -1,32 +1,27 @@
 <?php
 
-namespace Test\integration;
+namespace Test\Integration;
 
-
-use Emartech\AmqpWrapper\ChannelWrapper;
 use Emartech\AmqpWrapper\Factory;
 use Emartech\AmqpWrapper\Queue;
 use Emartech\AmqpWrapper\QueueConsumer;
 use Exception;
-use PhpAmqpLib\Channel\AMQPChannel;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Test\helper\SpyConsumer;
+use Test\Helper\SpyConsumer;
 
 class ChannelWrapperTest extends TestCase
 {
     private const QUEUE_WAIT_TIMEOUT_SECONDS = 1;
 
-    /** @var string */
-    private $queueName = 'test_queue';
-    /** @var SpyConsumer */
-    private $spy;
+    private string $queueName = 'test_queue';
+    private SpyConsumer $spyConsumer;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->queueName = 'testing';
-        $this->spy = new SpyConsumer($this);
+        $this->spyConsumer = new SpyConsumer($this);
     }
 
     /**
@@ -41,9 +36,9 @@ class ChannelWrapperTest extends TestCase
         $this->newChannel(__FUNCTION__)->send($message1);
         $this->newChannel(__FUNCTION__)->send($message2);
         $this->newChannel(__FUNCTION__)->purge();
-        $this->newChannel(__FUNCTION__)->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spyConsumer);
 
-        $this->spy->assertNoMessagesConsumed();
+        $this->spyConsumer->assertNoMessagesConsumed();
     }
 
     /**
@@ -55,10 +50,10 @@ class ChannelWrapperTest extends TestCase
         $message = ['test'];
 
         $this->newChannel(__FUNCTION__)->send($message);
-        $this->newChannel(__FUNCTION__)->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spyConsumer);
 
-        $this->spy->assertConsumedMessagesCount(1);
-        $this->spy->assertConsumedMessage(0, $message);
+        $this->spyConsumer->assertConsumedMessagesCount(1);
+        $this->spyConsumer->assertConsumedMessage(0, $message);
     }
 
     /**
@@ -71,8 +66,8 @@ class ChannelWrapperTest extends TestCase
         $message = ['test'];
 
         $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->send($message);
-        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->consume($this->spy);
-        $this->spy->assertConsumedMessagesCount(1);
+        $this->newChannel(__FUNCTION__, $ttlMilliSeconds)->consume($this->spyConsumer);
+        $this->spyConsumer->assertConsumedMessagesCount(1);
         usleep(600);
 
         $afterSpy = new SpyConsumer($this);
@@ -94,14 +89,14 @@ class ChannelWrapperTest extends TestCase
         $this->newChannel(__FUNCTION__)->send($message2);
         $this->newChannel(__FUNCTION__)->send($message3);
 
-        $this->newChannel(__FUNCTION__)->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spyConsumer);
 
-        $this->assertEquals($message1, $this->spy->consumedMessages[0]->getContents());
-        $this->assertEquals($message2, $this->spy->consumedMessages[1]->getContents());
+        $this->assertEquals($message1, $this->spyConsumer->consumedMessages[0]->getContents());
+        $this->assertEquals($message2, $this->spyConsumer->consumedMessages[1]->getContents());
 
-        $this->newChannel(__FUNCTION__)->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spyConsumer);
 
-        $this->assertEquals($message3, $this->spy->consumedMessages[2]->getContents());
+        $this->assertEquals($message3, $this->spyConsumer->consumedMessages[2]->getContents());
     }
 
     /**
@@ -116,11 +111,11 @@ class ChannelWrapperTest extends TestCase
         $this->newChannel(__FUNCTION__)->send($message1);
         $this->newChannel(__FUNCTION__)->send($message2);
 
-        $this->newChannel(__FUNCTION__)->consume($this->spy);
+        $this->newChannel(__FUNCTION__)->consume($this->spyConsumer);
 
-        $this->spy->assertConsumedMessagesCount(2);
-        $this->spy->assertConsumedMessage(0, $message1);
-        $this->spy->assertConsumedMessage(1, $message2);
+        $this->spyConsumer->assertConsumedMessagesCount(2);
+        $this->spyConsumer->assertConsumedMessage(0, $message1);
+        $this->spyConsumer->assertConsumedMessage(1, $message2);
 
         $this->assertNumberOfMessagesLeftInQueue(0, __FUNCTION__);
     }

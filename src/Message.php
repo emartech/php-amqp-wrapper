@@ -7,8 +7,8 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class Message
 {
-    private $channel;
-    private $message;
+    private ChannelWrapper $channel;
+    private AMQPMessage $message;
 
     public function __construct(ChannelWrapper $channel, AMQPMessage $message)
     {

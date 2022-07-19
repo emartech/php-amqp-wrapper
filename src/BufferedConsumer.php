@@ -11,25 +11,10 @@ use Throwable;
  */
 class BufferedConsumer implements QueueConsumer
 {
-    /**
-     * @var MessageBuffer
-     */
-    private $buffer;
-
-    /**
-     * @var QueueConsumer
-     */
-    private $delegate;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var string
-     */
-    private $queueName;
+    private MessageBuffer $buffer;
+    private QueueConsumer $delegate;
+    private LoggerInterface $logger;
+    private string $queueName;
 
 
     public function __construct(MessageBuffer $buffer, QueueConsumer $delegate, LoggerInterface $logger, string $queueName)
@@ -83,36 +68,37 @@ class BufferedConsumer implements QueueConsumer
 
     private function logConsumeSuccess(): void
     {
-        $this->logInfo('consume_success', 'messages consumed', ['messages_consumed' => $this->buffer->getMessageCount()]);
+        $this->logInfo(['messages_consumed' => $this->buffer->getMessageCount()]);
     }
 
     private function logConsumeFailure(Throwable $t): void
     {
-        $this->logError('consume_failure', 'consume failed', $t);
+        $this->logError($t);
     }
 
-    private function logInfo(string $event, string $logMessage, array $context = []): void
+    private function logInfo(array $context = []): void
     {
-        $this->logger->info($logMessage,
+        $this->logger->info(
+            'messages consumed',
             array_merge(
                 [
                     'queue' => $this->queueName,
-                    'event' => $event,
+                    'event' => 'consume_success',
                 ],
                 $context
             )
         );
     }
-    private function logError(string $event, string $logMessage, Throwable $t, array $context = []): void
+    private function logError(Throwable $t): void
     {
-        $this->logger->error($logMessage,
+        $this->logger->error(
+            'consume failed',
             array_merge(
                 [
                     'queue' => $this->queueName,
-                    'event' => $event,
+                    'event' => 'consume_failure',
                     'exception' => $t,
-                ],
-                $context
+                ]
             )
         );
     }

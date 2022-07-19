@@ -1,7 +1,6 @@
 <?php
 
-namespace Test\helper;
-
+namespace Test\Helper;
 
 use Emartech\AmqpWrapper\Message;
 use Emartech\AmqpWrapper\QueueConsumer;
@@ -10,27 +9,18 @@ use PHPUnit\Framework\TestCase;
 
 class SpyConsumer implements QueueConsumer
 {
-    /** @var Message[]|array */
-    public $consumedMessages = [];
-
-    /** @var bool */
-    public $timeOutCalled = false;
-
+    /** @var Message[] */
+    public array $consumedMessages = [];
+    public bool $timeOutCalled = false;
     private TestCase $testCase;
+    private int $prefetchCount;
 
-    /** @var int */
-    private $prefetchCount;
-
-
-    public function __construct(TestCase $testCase, $prefetchCount = 2)
+    public function __construct(TestCase $testCase, int $prefetchCount = 2)
     {
         $this->testCase = $testCase;
         $this->prefetchCount = $prefetchCount;
     }
 
-    /**
-     * @throws Exception
-     */
     public function consume(Message $message): void
     {
         $this->consumedMessages[] = $message;
