@@ -9,7 +9,7 @@
   "require": {
     "php": "^8.0",
     "php-amqplib/php-amqplib": "^3.0",
-    "psr/log": "^3.0",
+    "psr/log": "*",
     "ext-json": "*"
   },
   "require-dev": {
